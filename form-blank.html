@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>ฟอร์มเก็บข้อมูลพระภิกษุ (เปล่า) / Blank monk form</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: #222;
+    font: 13.5px/1.35 "TH Sarabun New", "Sarabun", "Leelawadee UI", Tahoma, sans-serif;
+    background: #e8edf2;
+  }
+  .bar {
+    position: sticky; top: 0; z-index: 2;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    padding: 10px 14px; background: #0f766e; color: #fff;
+  }
+  .bar b { margin-right: auto; }
+  .bar button, .bar a {
+    font: inherit; font-weight: 700; border: 0; border-radius: 8px;
+    padding: 8px 14px; cursor: pointer; text-decoration: none; color: #0f766e; background: #fff;
+  }
+  .bar a.ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.45); }
+  .sheet {
+    max-width: 210mm;
+    margin: 12px auto 32px;
+    background: #fff;
+    padding: 10mm 11mm 12mm;
+    box-shadow: 0 8px 24px rgba(15,23,42,.12);
+  }
+  h1 { margin: 0 0 2px; font-size: 20px; text-align: center; }
+  .sub { margin: 0 0 8px; text-align: center; font-size: 12px; color: #555; }
+  h2 {
+    margin: 11px 0 6px; font-size: 13.5px;
+    background: #f1f5f4; border-left: 4px solid #0f766e;
+    padding: 4px 8px;
+    break-after: avoid;
+  }
+  h3 { margin: 8px 0 4px; font-size: 13px; color: #0f4f4b; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 0 0 5px; align-items: flex-end; }
+  .f { flex: 1; min-width: 120px; }
+  .f.w2 { min-width: 240px; flex: 2; }
+  .f.w3 { min-width: 100%; }
+  label { display: block; font-size: 11px; color: #555; margin-bottom: 1px; }
+  label .en, h1 .en, h2 .en, h3 .en, th .en, td .en, .note .en, .photo .en, b .en {
+    font-weight: 400; color: #888;
+  }
+  label .en::before, h1 .en::before, h2 .en::before, h3 .en::before, th .en::before, td .en::before, .note .en::before, b .en::before {
+    content: " / "; color: #bbb;
+  }
+  .bar .en { font-weight: 400; opacity: .9; }
+  .bar .en::before { content: " / "; opacity: .65; }
+  .line { border-bottom: 1px solid #333; min-height: 20px; }
+  .chk { display: inline-flex; gap: 5px; align-items: center; margin-right: 10px; white-space: nowrap; }
+  .photo {
+    width: 28mm; height: 36mm; border: 1px solid #333;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: #666; text-align: center;
+    float: right; margin: 0 0 8px 12px;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 3px 0 8px; font-size: 12.5px; }
+  th, td { border: 1px solid #444; padding: 2px 4px; vertical-align: bottom; }
+  th { background: #f4f4f4; font-size: 11.5px; font-weight: 600; }
+  td { height: 22px; }
+  .note { clear: both; font-size: 11px; color: #555; margin: 0 0 5px; }
+  .block { border: 1px solid #ccc; padding: 6px 8px; margin: 0 0 8px; border-radius: 4px; }
+  .sign { display: flex; gap: 20px; margin-top: 14px; }
+  .sign .f { text-align: center; }
+  .sign .line { margin-top: 26px; }
+  @media print {
+    body { background: #fff; }
+    .bar { display: none !important; }
+    .sheet { margin: 0; padding: 0; box-shadow: none; max-width: none; }
+    h2, .block, tr { break-inside: avoid; }
+    @page { size: A4; margin: 9mm; }
+  }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>ฟอร์มเปล่า — พิมพ์เขียนมือ หรือดาวน์โหลด Excel กรอกตรง <span class="en">Blank form — print by hand, or Excel to type in</span></b>
+  <button type="button" onclick="window.print()">พิมพ์ <span class="en">Print</span></button>
+  <a href="/form-blank.html?download=1">ดาวน์โหลดฟอร์มพิมพ์ <span class="en">Printable form</span></a>
+  <a href="/form-blank.xlsx">ดาวน์โหลด Excel กรอกตรง</a>
+  <a class="ghost" href="/">กลับรายงาน แล้วกด โหลดจาก Excel <span class="en">Back — then Load from Excel</span></a>
+</div>
+<div class="sheet">
+  <h1>ทะเบียนประวัติพระภิกษุ / สามเณร <span class="en">Bhikkhu / samanera register</span></h1>
+  <p class="sub">แบบเก็บข้อมูลครบตามหน้าข้อมูลพระภิกษุ · จังหวัดพระนครศรีอยุธยา · Complete monk record · Phra Nakhon Si Ayutthaya</p>
+
+  <h2>ข้อมูลพระภิกษุ (หัวรายการ) <span class="en">Monk header</span></h2>
+  <div class="row">
+    <div class="f"><label>ประเภท <span class="en">Status</span></label><span class="chk">☐ ภิกษุ / Bhikkhu</span><span class="chk">☐ สามเณร / Samanera</span></div>
+    <div class="f"><label>สังกัดนิกาย <span class="en">Nikaya</span></label><span class="chk">☐ มหานิกาย</span><span class="chk">☐ ธรรมยุต</span></div>
+    <div class="f"><label>เลขที่หนังสือสุทธิ <span class="en">Sutthi book no.</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f w2"><label>ชื่อ (ราชทินนาม หรือฐานานุกรม) <span class="en">Name / royal title</span></label><div class="line"></div></div>
+    <div class="f"><label>ฉายา * <span class="en">Chaya</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f w2"><label>ประเภทชื่อ <span class="en">Name type</span></label>
+      <span class="chk">☐ ชื่อพระสงฆ์ / สามเณร · Monk / novice name</span><br>
+      <span class="chk">☐ พระราชาคณะ</span><span class="chk">☐ พระครูสัญญาบัตร</span><br>
+      <span class="chk">☐ พระครูฐานานุกรม</span><span class="chk">☐ พระฐานานุกรม</span>
+    </div>
+    <div class="f"><label>ชั้นสมณศักดิ์ <span class="en">Ecclesiastical rank</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f w2"><label>ประเภทเอกสาร <span class="en">ID type</span></label>
+      <span class="chk">☐ คนไทย · เลขบัตรประชาชน / Thai national ID</span>
+      <span class="chk">☐ ต่างชาติ · พาสปอร์ต / Foreign passport</span>
+    </div>
+    <div class="f"><label>ลำดับนิตยภัต (ถ้ามี) <span class="en">Nittayapat no.</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f w2"><label>เลขบัตรประชาชน 13 หลัก (คนไทย) <span class="en">Thai national ID</span></label><div class="line"></div></div>
+    <div class="f"><label>เลขพาสปอร์ต (ต่างชาติ) <span class="en">Passport no.</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f w2"><label>วัดต้นสังกัดปัจจุบัน <span class="en">Home monastery</span></label><div class="line"></div></div>
+    <div class="f"><label>ตำบลคณะสงฆ์ <span class="en">Sangha tambon</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>ตำบล (บ้านเมือง) <span class="en">Subdistrict</span></label><div class="line"></div></div>
+    <div class="f"><label>อำเภอ <span class="en">District</span></label><div class="line"></div></div>
+    <div class="f"><label>จังหวัด <span class="en">Province</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>วันอุปสมบท (วัน / เดือน / พ.ศ.) <span class="en">Ordination date</span></label><div class="line"></div></div>
+    <div class="f w2"><label>สถานะ <span class="en">Current status</span></label>
+      <span class="chk">☐ จำพรรษา / Resident</span><span class="chk">☐ ย้ายวัด / Moved</span>
+      <span class="chk">☐ มรณภาพ / Passed away</span><span class="chk">☐ ลาสิกขา / Disrobed</span>
+    </div>
+  </div>
+  <div class="row"><div class="f w3"><label>หมายเหตุ <span class="en">Notes</span></label><div class="line"></div></div></div>
+
+  <h2>ส่วนที่ 1 รูป <span class="en">Photo</span></h2>
+  <div class="photo">ติดรูป<br>หน้าตรง<br>JPEG<br><span class="en">Photo</span></div>
+  <div class="row">
+    <div class="f w2"><label>ชื่อไฟล์รูป JPEG <span class="en">JPEG file name</span></label><div class="line"></div></div>
+  </div>
+  <p class="note">ถ้ายังไม่มีรูปให้เว้นว่าง <span class="en">Leave blank if no photo yet</span></p>
+
+  <h2>ส่วนที่ 2 ประวัติเดิม (ก่อนอุปสมบท) <span class="en">Lay life before ordination</span></h2>
+  <div class="row">
+    <div class="f"><label>ชื่อจริง (ชื่อเดิม) <span class="en">Given name</span></label><div class="line"></div></div>
+    <div class="f"><label>นามสกุล (เดิม) <span class="en">Family name</span></label><div class="line"></div></div>
+    <div class="f"><label>ชื่อเล่น <span class="en">Nickname</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f w3"><label>ชื่อภาษาอังกฤษ <span class="en">English / romanized name</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>วัน/เดือน/ปี เกิด <span class="en">Date of birth</span></label><div class="line"></div></div>
+    <div class="f w2"><label>ชื่อ-นามสกุล ของบิดา <span class="en">Father's name</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f w2"><label>ชื่อ-นามสกุล ของมารดา <span class="en">Mother's name</span></label><div class="line"></div></div>
+    <div class="f"><label>อาชีพเดิม <span class="en">Former occupation</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>เชื้อชาติ <span class="en">Ethnicity</span></label><div class="line"></div></div>
+    <div class="f"><label>สัญชาติ <span class="en">Nationality</span></label><div class="line"></div></div>
+    <div class="f"><label>สัณฐาน <span class="en">Build</span></label><div class="line"></div></div>
+    <div class="f"><label>สีเนื้อ <span class="en">Complexion</span></label><div class="line"></div></div>
+  </div>
+  <div class="row"><div class="f w3"><label>ตำหนิ <span class="en">Distinguishing marks</span></label><div class="line"></div></div></div>
+  <div class="row">
+    <div class="f w2"><label>ที่อยู่เดิม บ้านเลขที่/หมู่ที่ <span class="en">Former address</span></label><div class="line"></div></div>
+    <div class="f"><label>รหัสไปรษณีย์ <span class="en">Postal code</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>แขวง/ตำบล <span class="en">Subdistrict</span></label><div class="line"></div></div>
+    <div class="f"><label>เขต/อำเภอ <span class="en">District</span></label><div class="line"></div></div>
+    <div class="f"><label>จังหวัด <span class="en">Province / state</span></label><div class="line"></div></div>
+  </div>
+
+  <h2>ส่วนที่ 3 บรรพชาอุปสมบท <span class="en">Novice and higher ordination</span></h2>
+  <h3>บรรพชาสามเณร <span class="en">Novice ordination</span></h3>
+  <div class="row">
+    <div class="f"><label>วันบรรพชาสามเณร <span class="en">Novice ordination date</span></label><div class="line"></div></div>
+    <div class="f w2"><label>บรรพชาสามเณร ณ วัด <span class="en">Novice ordination monastery</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>ตำบล <span class="en">Subdistrict</span></label><div class="line"></div></div>
+    <div class="f"><label>อำเภอ <span class="en">District</span></label><div class="line"></div></div>
+    <div class="f"><label>จังหวัด <span class="en">Province</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f w2"><label>ชื่อพระอุปัชฌาย์ (ตอนบรรพชา) <span class="en">Preceptor</span></label><div class="line"></div></div>
+    <div class="f"><label>วัดพระอุปัชฌาย์ <span class="en">Preceptor's monastery</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>ตำบลวัดพระอุปัชฌาย์ <span class="en">Subdistrict</span></label><div class="line"></div></div>
+    <div class="f"><label>อำเภอ <span class="en">District</span></label><div class="line"></div></div>
+    <div class="f"><label>จังหวัด <span class="en">Province</span></label><div class="line"></div></div>
+  </div>
+  <h3>อุปสมบท <span class="en">Higher ordination</span></h3>
+  <div class="row">
+    <div class="f"><label>วันอุปสมบท <span class="en">Ordination date</span></label><div class="line"></div></div>
+    <div class="f"><label>อุปสมบทเมื่ออายุ <span class="en">Age at ordination</span></label><div class="line"></div></div>
+    <div class="f"><label>เวลาที่อุปสมบท <span class="en">Time of ordination</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f w2"><label>วัดที่อุปสมบท <span class="en">Ordination monastery</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>ตำบล <span class="en">Subdistrict</span></label><div class="line"></div></div>
+    <div class="f"><label>อำเภอ <span class="en">District</span></label><div class="line"></div></div>
+    <div class="f"><label>จังหวัด <span class="en">Province</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>พระอุปัชฌาย์ <span class="en">Preceptor</span></label><div class="line"></div></div>
+    <div class="f"><label>สังกัดวัดของพระอุปัชฌาย์ <span class="en">Preceptor's monastery</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>พระกรรมวาจาจารย์ <span class="en">Kammavaca acariya</span></label><div class="line"></div></div>
+    <div class="f"><label>วัดพระกรรมวาจาจารย์ <span class="en">Kammavaca's monastery</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>พระอนุสาวนาจารย์ <span class="en">Anusavana acariya</span></label><div class="line"></div></div>
+    <div class="f"><label>วัดพระอนุสาวนาจารย์ <span class="en">Anusavana's monastery</span></label><div class="line"></div></div>
+  </div>
+
+  <h2>ส่วนที่ 4 สถานภาพปัจจุบัน <span class="en">Current residence</span></h2>
+  <div class="row">
+    <div class="f w2"><label>วัดที่พำนัก <span class="en">Residence monastery</span></label><div class="line"></div></div>
+    <div class="f"><label>เบอร์ติดต่อวัดที่พำนัก <span class="en">Monastery phone</span></label><div class="line"></div></div>
+    <div class="f"><label>เบอร์มือถือ <span class="en">Mobile</span></label><div class="line"></div></div>
+  </div>
+
+  <h2>ส่วนที่ 5 วิทยฐานะนักธรรม / บาลี <span class="en">Naktham / Pali</span></h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:18%">ชั้น <span class="en">Level</span></th>
+        <th style="width:12%">พ.ศ. <span class="en">B.E.</span></th>
+        <th>วัด <span class="en">Monastery</span></th>
+        <th>สำนักเรียน <span class="en">School</span></th>
+        <th style="width:16%">จังหวัด <span class="en">Province</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>นักธรรม ชั้น ตรี <span class="en">3rd</span></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>นักธรรม ชั้น โท <span class="en">2nd</span></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>นักธรรม ชั้น เอก <span class="en">1st</span></td><td></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:18%">ชั้นบาลี <span class="en">Pali grade</span></th>
+        <th style="width:12%">พ.ศ. <span class="en">B.E.</span></th>
+        <th>สอบในนามวัด <span class="en">Exam monastery</span></th>
+        <th>สำนักเรียน <span class="en">School</span></th>
+        <th style="width:16%">จังหวัด <span class="en">Province</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>ประโยค ป.ธ. ๑-๒</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>ป.ธ.3</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>ป.ธ.4</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>ป.ธ.5</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>ป.ธ.6</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>ป.ธ.7</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>ป.ธ.8</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>ป.ธ.9</td><td></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h2>ส่วนที่ 6 วิทยฐานะสามัญ <span class="en">Secular education</span></h2>
+  <div class="row">
+    <div class="f"><label>สูงสุด พ.ศ. <span class="en">Highest B.E. year</span></label><div class="line"></div></div>
+    <div class="f"><label>ระดับชั้นสูงสุด <span class="en">Highest level</span></label><div class="line"></div></div>
+    <div class="f"><label>สถานศึกษา <span class="en">School / university</span></label><div class="line"></div></div>
+    <div class="f"><label>สาขาที่เรียน <span class="en">Major</span></label><div class="line"></div></div>
+  </div>
+  <table>
+    <thead><tr><th>ชั้น <span class="en">Level</span></th><th style="width:12%">พ.ศ. <span class="en">B.E.</span></th><th style="width:16%">วุฒิ / ชั้น <span class="en">Qualification</span></th><th>สถานศึกษา <span class="en">Institution</span></th></tr></thead>
+    <tbody>
+      <tr><td>ประถม <span class="en">Primary</span></td><td></td><td></td><td></td></tr>
+      <tr><td>มัธยมต้น <span class="en">Lower secondary</span></td><td></td><td></td><td></td></tr>
+      <tr><td>มัธยมปลาย <span class="en">Upper secondary</span></td><td></td><td></td><td></td></tr>
+      <tr><td>อนุปริญญา <span class="en">Diploma</span></td><td></td><td></td><td></td></tr>
+      <tr><td>ปริญญาตรี <span class="en">Bachelor</span></td><td></td><td></td><td></td></tr>
+      <tr><td>ปริญญาโท <span class="en">Master</span></td><td></td><td></td><td></td></tr>
+      <tr><td>ปริญญาเอก <span class="en">Doctorate</span></td><td></td><td></td><td></td></tr>
+      <tr><td>ปริญญากิตติมศักดิ์ <span class="en">Honorary</span></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+  <p class="note">วุฒิ / หลักสูตรอื่น (ป.บส. ประกาศนียบัตร ปริญญาใบที่ 2 เป็นต้นไป) <span class="en">Other certificates / additional degrees</span></p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:14%">ประเภท <span class="en">Type</span></th>
+        <th style="width:9%">พ.ศ. <span class="en">B.E.</span></th>
+        <th style="width:9%">รุ่นที่ <span class="en">Cohort</span></th>
+        <th>ชื่อหลักสูตร / ปริญญา <span class="en">Course / degree</span></th>
+        <th>สถาบัน <span class="en">Institution</span></th>
+        <th style="width:12%">สาขา <span class="en">Major</span></th>
+        <th style="width:14%">หมายเหตุ <span class="en">Notes</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h2>ส่วนที่ 7 สมณศักดิ์และฐานานุกรม <span class="en">Royal title and thananukrom</span></h2>
+  <p class="note">สมณศักดิ์กับฐานานุกรมคนละรายการ · กรอกครั้งละบล็อก · ของเก่าไม่ทับของใหม่ <span class="en">Royal titles and thananukrom are separate records</span></p>
+  <div class="block">
+    <b>ครั้งที่ 1 · ☐ สมณศักดิ์ &nbsp; ☐ ฐานานุกรม <span class="en">1st · royal title or thananukrom</span></b>
+    <div class="row">
+      <div class="f"><label>พ.ศ. <span class="en">B.E.</span></label><div class="line"></div></div>
+      <div class="f w2"><label>การได้รับ <span class="en">Grant type</span></label>
+        <span class="chk">☐ ตั้งสมณศักดิ์</span><span class="chk">☐ เลื่อนสมณศักดิ์</span><br>
+        <span class="chk">☐ ปรับสมณศักดิ์</span><span class="chk">☐ แต่งตั้งเป็นพระฐานานุกรม</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="f w3"><label>ประเภท <span class="en">Type</span></label>
+        <span class="chk">☐ พระราชาคณะ</span><span class="chk">☐ พระครูสัญญาบัตร</span>
+        <span class="chk">☐ พระครูฐานานุกรม</span><span class="chk">☐ พระฐานานุกรม</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="f"><label>ชั้นสมณศักดิ์ <span class="en">Rank class</span></label><div class="line"></div></div>
+      <div class="f"><label>ราชทินนาม <span class="en">Royal title name</span></label><div class="line"></div></div>
+      <div class="f"><label>วันที่ได้รับพระราชทาน <span class="en">Date granted</span></label><div class="line"></div></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>ตำแหน่งฐานานุกรม <span class="en">Thananukrom office</span></label><div class="line"></div></div>
+      <div class="f"><label>ในพระ <span class="en">Under the patronage of</span></label><div class="line"></div></div>
+      <div class="f"><label>วัดของพระราชาคณะ <span class="en">Patron's monastery</span></label><div class="line"></div></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>ฝ่าย <span class="en">Division</span></label><span class="chk">☐ วิปัสสนา</span><span class="chk">☐ คันถธุระ</span></div>
+      <div class="f w2"><label>ราชกิจจานุเบกษา <span class="en">Royal Gazette</span></label><div class="line"></div></div>
+    </div>
+    <div class="row"><div class="f w3"><label>หมายเหตุ <span class="en">Notes</span></label><div class="line"></div></div></div>
+  </div>
+  <div class="block">
+    <b>ครั้งที่ 2 · ☐ สมณศักดิ์ &nbsp; ☐ ฐานานุกรม <span class="en">2nd</span></b>
+    <div class="row">
+      <div class="f"><label>พ.ศ. <span class="en">B.E.</span></label><div class="line"></div></div>
+      <div class="f w2"><label>การได้รับ <span class="en">Grant type</span></label>
+        <span class="chk">☐ ตั้งสมณศักดิ์</span><span class="chk">☐ เลื่อนสมณศักดิ์</span>
+        <span class="chk">☐ ปรับสมณศักดิ์</span><span class="chk">☐ แต่งตั้งเป็นพระฐานานุกรม</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="f"><label>ประเภท <span class="en">Type</span></label><div class="line"></div></div>
+      <div class="f"><label>ชั้นสมณศักดิ์ / ตำแหน่งฐานานุกรม <span class="en">Rank / office</span></label><div class="line"></div></div>
+      <div class="f"><label>ราชทินนาม / วันที่ <span class="en">Title / date</span></label><div class="line"></div></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>ในพระ / วัดของพระราชาคณะ <span class="en">Patron / monastery</span></label><div class="line"></div></div>
+      <div class="f"><label>ฝ่าย · ราชกิจจานุเบกษา · หมายเหตุ <span class="en">Division · Gazette · notes</span></label><div class="line"></div></div>
+    </div>
+  </div>
+  <div class="block">
+    <b>ครั้งที่ 3 · ☐ สมณศักดิ์ &nbsp; ☐ ฐานานุกรม <span class="en">3rd</span></b>
+    <div class="row">
+      <div class="f"><label>พ.ศ. <span class="en">B.E.</span></label><div class="line"></div></div>
+      <div class="f"><label>การได้รับ / ประเภท <span class="en">Grant / type</span></label><div class="line"></div></div>
+      <div class="f"><label>ชั้นสมณศักดิ์ / ราชทินนาม / วันที่ <span class="en">Rank / title / date</span></label><div class="line"></div></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>ตำแหน่งฐานานุกรม · ในพระ · วัดของพระราชาคณะ <span class="en">Office · patron · monastery</span></label><div class="line"></div></div>
+      <div class="f"><label>ฝ่าย · ราชกิจจานุเบกษา · หมายเหตุ <span class="en">Division · Gazette · notes</span></label><div class="line"></div></div>
+    </div>
+  </div>
+  <div class="block">
+    <b>ครั้งที่ 4 · ☐ สมณศักดิ์ &nbsp; ☐ ฐานานุกรม <span class="en">4th</span></b>
+    <div class="row">
+      <div class="f"><label>พ.ศ. <span class="en">B.E.</span></label><div class="line"></div></div>
+      <div class="f"><label>การได้รับ / ประเภท <span class="en">Grant / type</span></label><div class="line"></div></div>
+      <div class="f"><label>ชั้นสมณศักดิ์ / ราชทินนาม / วันที่ <span class="en">Rank / title / date</span></label><div class="line"></div></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>ตำแหน่งฐานานุกรม · ในพระ · วัดของพระราชาคณะ <span class="en">Office · patron · monastery</span></label><div class="line"></div></div>
+      <div class="f"><label>ฝ่าย · ราชกิจจานุเบกษา · หมายเหตุ <span class="en">Division · Gazette · notes</span></label><div class="line"></div></div>
+    </div>
+  </div>
+
+  <h2>ส่วนที่ 8 ตำแหน่งการปกครองภายในวัดและงานในวัด <span class="en">Monastery offices</span></h2>
+  <p class="note">
+    ปกครองวัด <span class="en">Monastery admin</span>: ☐ ผู้ช่วยเจ้าอาวาส &nbsp; ☐ รองเจ้าอาวาส &nbsp; ☐ เจ้าอาวาส<br>
+    งานในวัด <span class="en">Temple work</span>: ☐ ประธานหน่วยอบรมประชาชนประจำตำบล &nbsp; ☐ ผู้อำนวยการศูนย์ศึกษาพระพุทธศาสนาวันอาทิตย์<br>
+    ☐ หัวหน้าหน่วยเผยแผ่ศีลธรรม &nbsp; ☐ หน่วยเผยแผ่ศีลธรรม &nbsp; ☐ อื่น ๆ ________
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:10%">พ.ศ. <span class="en">B.E.</span></th>
+        <th>ตำแหน่ง <span class="en">Office</span></th>
+        <th style="width:16%">วันที่ได้รับ <span class="en">Date</span></th>
+        <th>วัด <span class="en">Monastery</span></th>
+        <th>ตำบล <span class="en">Subdistrict</span></th>
+        <th>อำเภอ <span class="en">District</span></th>
+        <th>จังหวัด <span class="en">Province</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+  <div class="row"><div class="f w3"><label>หมายเหตุตำแหน่งวัด <span class="en">Monastery office notes</span></label><div class="line"></div></div></div>
+
+  <h2>ส่วนที่ 9 ตำแหน่งการปกครองคณะสงฆ์ / สนองงานคณะสงฆ์ <span class="en">Sangha administration</span></h2>
+  <p class="note">
+    ปกครอง <span class="en">Admin</span>: ☐ รองเจ้าคณะตำบล ☐ เจ้าคณะตำบล ☐ รองเจ้าคณะอำเภอ ☐ เจ้าคณะอำเภอ
+    ☐ รองเจ้าคณะจังหวัด ☐ เจ้าคณะจังหวัด ☐ รองเจ้าคณะภาค ☐ เจ้าคณะภาค<br>
+    สนองงาน <span class="en">Secretariat</span>: ☐ เลขานุการรองเจ้าคณะตำบล ☐ เลขานุการเจ้าคณะตำบล
+    ☐ เลขานุการรองเจ้าคณะอำเภอ ☐ เลขานุการเจ้าคณะอำเภอ
+    ☐ เลขานุการรองเจ้าคณะจังหวัด ☐ เลขานุการเจ้าคณะจังหวัด
+    ☐ เลขานุการรองเจ้าคณะภาค ☐ เลขานุการเจ้าคณะภาค
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:9%">พ.ศ. <span class="en">B.E.</span></th>
+        <th>ตำแหน่ง <span class="en">Office</span></th>
+        <th style="width:14%">วันที่ได้รับ <span class="en">Date</span></th>
+        <th>ตำบล <span class="en">Tambon</span></th>
+        <th>เขต <span class="en">Zone</span></th>
+        <th>อำเภอ <span class="en">District</span></th>
+        <th>จังหวัด <span class="en">Province</span></th>
+        <th>ภาค <span class="en">Region</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+  <div class="row"><div class="f w3"><label>หมายเหตุตำแหน่งคณะสงฆ์ <span class="en">Sangha office notes</span></label><div class="line"></div></div></div>
+
+  <h2>ส่วนที่ 10 ตำแหน่งงานพิเศษ <span class="en">Special appointments</span></h2>
+  <p class="note">
+    ☐ พระธรรมทูต / Dhammaduta &nbsp; ☐ พระนักเทศน์ / Preacher &nbsp; ☐ พระวิปัสสนาจารย์ / Vipassana<br>
+    ☐ พระปริยัตินิเทศน์ &nbsp; ☐ พระบัณฑิตเผยแผ่ &nbsp; ☐ อื่น ๆ / Other ________
+  </p>
+  <div class="row">
+    <div class="f"><label>วันที่ได้รับมอบหมาย <span class="en">Date assigned</span></label><div class="line"></div></div>
+    <div class="f"><label>ชื่องาน <span class="en">Work title</span></label><div class="line"></div></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>ตำแหน่งงานพิเศษ <span class="en">Special role</span></label><div class="line"></div></div>
+    <div class="f w2"><label>รายละเอียด <span class="en">Details</span></label><div class="line"></div></div>
+  </div>
+  <p class="note">ปีอบรม (ธรรมทูต นักเทศน์ วิปัสสนา) หรือปีที่แต่งตั้ง (ปริยัตินิเทศน์ บัณฑิตเผยแผ่) <span class="en">Training year or appointment year</span></p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:22%">ประเภท <span class="en">Type</span></th>
+        <th style="width:16%">ปีอบรม / ปีที่แต่งตั้ง <span class="en">Training / appointment year</span></th>
+        <th>สถานที่อบรม / หมายเหตุ <span class="en">Place / notes</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>พระธรรมทูต</td><td></td><td></td></tr>
+      <tr><td>พระนักเทศน์</td><td></td><td></td></tr>
+      <tr><td>พระวิปัสสนาจารย์</td><td></td><td></td></tr>
+      <tr><td>พระปริยัตินิเทศน์</td><td></td><td></td></tr>
+      <tr><td>พระบัณฑิตเผยแผ่</td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h2>ส่วนที่ 11 งานคณะสงฆ์ที่ได้รับมอบหมาย <span class="en">Assigned sangha work</span></h2>
+  <p class="note">
+    ☐ การปกครอง / Admin &nbsp; ☐ การศาสนศึกษา / Education &nbsp; ☐ การศึกษาสงเคราะห์ / Educational welfare<br>
+    ☐ การเผยแผ่พระพุทธศาสนา / Propagation &nbsp; ☐ การสาธารณูปการ / Facilities &nbsp; ☐ การสาธารณสงเคราะห์ / Social welfare &nbsp; ☐ อื่น ๆ / Other ________
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:10%">พ.ศ. <span class="en">B.E.</span></th>
+        <th style="width:22%">ประเภทงาน <span class="en">Work type</span></th>
+        <th style="width:16%">วันที่ได้รับ <span class="en">Date</span></th>
+        <th>รายละเอียด <span class="en">Details</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h2>หนังสือสุทธิ · สังกัดเมื่อบวช / รับเข้าสังกัด / ย้ายสังกัด <span class="en">Sutthi · affiliation</span></h2>
+  <div class="block">
+    <b>สังกัดวัดเมื่อบวช <span class="en">Affiliation at ordination</span></b>
+    <div class="row">
+      <div class="f w2"><label>สังกัดวัดเมื่อบวช <span class="en">Monastery at ordination</span></label><div class="line"></div></div>
+      <div class="f"><label>วันที่สังกัดเมื่อบวช <span class="en">Date</span></label><div class="line"></div></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>ตำบล <span class="en">Subdistrict</span></label><div class="line"></div></div>
+      <div class="f"><label>อำเภอ <span class="en">District</span></label><div class="line"></div></div>
+      <div class="f"><label>จังหวัด <span class="en">Province</span></label><div class="line"></div></div>
+    </div>
+  </div>
+  <div class="block">
+    <b>รับเข้าสังกัด <span class="en">Received into affiliation</span></b>
+    <div class="row">
+      <div class="f w2"><label>มาอยู่วัดชื่อวัด <span class="en">Received at monastery</span></label><div class="line"></div></div>
+      <div class="f"><label>วันที่รับเข้าสังกัด <span class="en">Date received</span></label><div class="line"></div></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>ตำบล <span class="en">Subdistrict</span></label><div class="line"></div></div>
+      <div class="f"><label>อำเภอ <span class="en">District</span></label><div class="line"></div></div>
+      <div class="f"><label>จังหวัด <span class="en">Province</span></label><div class="line"></div></div>
+    </div>
+    <div class="row"><div class="f w3"><label>หมายเหตุ <span class="en">Notes</span></label><div class="line"></div></div></div>
+  </div>
+  <div class="block">
+    <b>ย้ายสังกัด <span class="en">Change of affiliation</span></b>
+    <div class="row">
+      <div class="f w2"><label>ย้ายจากวัด <span class="en">From monastery</span></label><div class="line"></div></div>
+      <div class="f"><label>วันที่ย้าย <span class="en">Move date</span></label><div class="line"></div></div>
+    </div>
+    <div class="row">
+      <div class="f w2"><label>ไปอยู่วัด <span class="en">To monastery</span></label><div class="line"></div></div>
+      <div class="f"><label>เหตุที่ย้าย <span class="en">Reason</span></label><div class="line"></div></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>ตำบลวัดที่ไป <span class="en">Subdistrict</span></label><div class="line"></div></div>
+      <div class="f"><label>อำเภอ <span class="en">District</span></label><div class="line"></div></div>
+      <div class="f"><label>จังหวัด <span class="en">Province</span></label><div class="line"></div></div>
+    </div>
+    <div class="row">
+      <div class="f w2"><label>รับเข้าสังกัดวัดชื่อ (ปลายทาง) <span class="en">Receiving monastery</span></label><div class="line"></div></div>
+      <div class="f"><label>วันที่รับเข้าสังกัด <span class="en">Date received</span></label><div class="line"></div></div>
+    </div>
+  </div>
+
+  <h2>บันทึกการจำพรรษา <span class="en">Rains retreat record</span></h2>
+  <p class="note">กรอกทุกปีตามสังกัด · ถ้าไปจำพรรษาที่อื่นให้ติ๊กและระบุวัดที่ยืมในปีนั้น · ออกพรรษาถือว่ากลับวัดเดิม <span class="en">Record every year at the home monastery. Mark away-rains only for that year.</span></p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:8%">พ.ศ. <span class="en">B.E.</span></th>
+        <th>วัดที่จำพรรษา <span class="en">Rains monastery</span></th>
+        <th>ตำบล <span class="en">Subdistrict</span></th>
+        <th>ตำบลคณะสงฆ์ <span class="en">Sangha tambon</span></th>
+        <th>อำเภอ <span class="en">District</span></th>
+        <th>จังหวัด <span class="en">Province</span></th>
+        <th style="width:7%">อายุ <span class="en">Age</span></th>
+        <th style="width:8%">พรรษา <span class="en">Vassa</span></th>
+        <th style="width:18%">ลักษณะปีนี้ <span class="en">This year</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>2563</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>☐ ตามสังกัด / home ☐ ไปที่อื่น / away</td></tr>
+      <tr><td>2564</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>☐ ตามสังกัด / home ☐ ไปที่อื่น / away</td></tr>
+      <tr><td>2565</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>☐ ตามสังกัด / home ☐ ไปที่อื่น / away</td></tr>
+      <tr><td>2566</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>☐ ตามสังกัด / home ☐ ไปที่อื่น / away</td></tr>
+      <tr><td>2567</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>☐ ตามสังกัด / home ☐ ไปที่อื่น / away</td></tr>
+      <tr><td>2568</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>☐ ตามสังกัด / home ☐ ไปที่อื่น / away</td></tr>
+      <tr><td>2569</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>☐ ตามสังกัด / home ☐ ไปที่อื่น / away</td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>☐ ตามสังกัด / home ☐ ไปที่อื่น / away</td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>☐ ตามสังกัด / home ☐ ไปที่อื่น / away</td></tr>
+    </tbody>
+  </table>
+
+  <div class="sign">
+    <div class="f"><div class="line"></div>ผู้กรอก / ผู้ให้ข้อมูล · Filled by</div>
+    <div class="f"><div class="line"></div>วัด / วันที่ · Monastery / date</div>
+    <div class="f"><div class="line"></div>ผู้รับแบบ · Received by</div>
+  </div>
+</div>
+<script>
+  if (/\bprint=1\b/.test(location.search)) {
+    setTimeout(function () { window.print(); }, 250);
+  }
+</script>
+</body>
+</html>

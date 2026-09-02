@@ -1,0 +1,11 @@
+{
+  "name": "wat-phra",
+  "private": true,
+  "description": "ระบบฐานข้อมูลพระภิกษุ — คนละระบบกับบัญชีวัดและตรวจบัญชีวัด",
+  "scripts": {
+    "start": "node server/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

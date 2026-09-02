@@ -1,0 +1,29 @@
+# คนละบริการกับ wat-accounting (บัญชีวัด) และ wat-audit (ตรวจบัญชี)
+# อย่าชี้บริการนี้ไปที่ repo บัญชีวัด และอย่าใช้ฐาน wat_accounting / wat_audit
+databases:
+  - name: wat-phra-db
+    databaseName: wat_phra
+    user: wat_phra
+    plan: basic-256mb
+
+services:
+  - type: web
+    name: wat-phra
+    runtime: node
+    plan: starter
+    buildCommand: npm install --prefix server
+    startCommand: node server/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: PHRA_ADMIN_USER
+        value: "admin"
+      - key: PHRA_ADMIN_PASSWORD
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wat-phra-db
+          property: connectionString
