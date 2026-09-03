@@ -43,11 +43,18 @@ const {
   applyAdminPassword,
   requireAuth,
   requireAdmin,
+  requireUserManager,
   login,
   loginAllowed,
   destroySession,
   setSessionCookie,
   clearSessionCookie,
+  registerUser,
+  requestLevel,
+  approveRequestedLevel,
+  rejectRequestedLevel,
+  canApproveRequested,
+  usersVisibleWhere,
   appendViewScope,
   appendHomeScope,
   insertBeforeOrderBy,
@@ -55,6 +62,7 @@ const {
   filterWatsForPlaces,
   filterSanghaTambons,
   canManagePlaces,
+  canManageUsers,
   assertPlaceWrite,
   assertNewMonkInScope,
   applyWatUserHome,
@@ -836,9 +844,42 @@ app.post("/api/login", async (req, res) => {
     res.status(status).json({ error: e.message || "เข้าสู่ระบบไม่สำเร็จ" });
   }
 });
+app.post("/api/register", async (req, res) => {
+  try {
+    if (!loginAllowed(clientIp(req))) {
+      return res.status(429).json({ error: "ลองสมัครบ่อยเกินไป กรุณารอสักครู่" });
+    }
+    const body = req.body || {};
+    const wat = await resolveWat(pool, {
+      name: body.watName || body.name,
+      district: body.district,
+      province: body.province,
+      tambon: body.tambon
+    });
+    const out = await registerUser(pool, body, wat);
+    setSessionCookie(res, out.token);
+    res.json({ user: out.user });
+  } catch (e) {
+    if (e && e.code === "23505") return res.status(409).json({ error: "ชื่อผู้ใช้นี้มีแล้ว" });
+    const status = e && e.status ? e.status : 500;
+    res.status(status).json({ error: e.message || "สมัครไม่สำเร็จ" });
+  }
+});
 app.use("/api", requireAuth(pool));
 app.get("/api/me", (req, res) => {
-  res.json({ user: req.user, canManagePlaces: canManagePlaces(req.user) });
+  res.json({
+    user: req.user,
+    canManagePlaces: canManagePlaces(req.user),
+    canManageUsers: canManageUsers(req.user)
+  });
+});
+app.post("/api/me/request-level", async (req, res) => {
+  try {
+    const user = await requestLevel(pool, req.user, req.body && (req.body.accessLevel || req.body.level));
+    res.json({ user });
+  } catch (e) {
+    sendErr(res, e, "ส่งคำขอไม่สำเร็จ");
+  }
 });
 app.post("/api/logout", async (req, res) => {
   try {
@@ -847,10 +888,21 @@ app.post("/api/logout", async (req, res) => {
   clearSessionCookie(res);
   res.json({ ok: true });
 });
-app.get("/api/users", requireAdmin, async (req, res) => {
+app.get("/api/users", requireUserManager, async (req, res) => {
   try {
-    const r = await pool.query("SELECT * FROM phra_users ORDER BY access_level, username, id");
-    res.json({ users: r.rows.map(publicUser) });
+    const params = [];
+    const where = usersVisibleWhere(req.user, params);
+    const r = await pool.query(
+      "SELECT * FROM phra_users WHERE 1=1" + where + " ORDER BY CASE WHEN requested_level <> '' THEN 0 ELSE 1 END, access_level, username, id",
+      params
+    );
+    res.json({
+      users: r.rows.map((row) => {
+        const u = publicUser(row);
+        u.canApprove = canApproveRequested(req.user, u);
+        return u;
+      })
+    });
   } catch (e) {
     sendErr(res, e, "อ่านผู้ใช้ไม่สำเร็จ");
   }
@@ -909,6 +961,22 @@ app.delete("/api/users/:id", requireAdmin, async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     sendErr(res, e, "ลบผู้ใช้ไม่สำเร็จ");
+  }
+});
+app.post("/api/users/:id/approve", requireUserManager, async (req, res) => {
+  try {
+    const user = await approveRequestedLevel(pool, req.user, req.params.id, req.body || {});
+    res.json({ user });
+  } catch (e) {
+    sendErr(res, e, "อนุมัติไม่สำเร็จ");
+  }
+});
+app.post("/api/users/:id/reject", requireUserManager, async (req, res) => {
+  try {
+    const user = await rejectRequestedLevel(pool, req.user, req.params.id);
+    res.json({ user });
+  } catch (e) {
+    sendErr(res, e, "ปฏิเสธไม่สำเร็จ");
   }
 });
 app.get("/api/samanasak", (req, res) => {

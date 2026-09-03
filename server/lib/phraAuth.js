@@ -1,12 +1,14 @@
 const crypto = require("crypto");
 
-const LEVELS = ["wat", "tambon", "province", "admin"];
+const LEVELS = ["wat", "tambon", "district", "province", "admin"];
 const ACCESS_LABEL = {
   wat: "วัด",
   tambon: "ตำบลคณะสงฆ์",
+  district: "อำเภอ",
   province: "จังหวัด",
-  admin: "ผู้ดูแลระบบ"
+  admin: "ผู้ดูแลแพลตฟอร์ม"
 };
+const LEVEL_RANK = { wat: 1, tambon: 2, district: 3, province: 4, admin: 5 };
 const COOKIE = "phra_sid";
 const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
 const SCRYPT = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
@@ -25,8 +27,9 @@ function parseAccessLevel(v) {
   const s = clean(v).toLowerCase();
   if (s === "wat" || s === "วัด" || s === "1") return "wat";
   if (s === "tambon" || s === "ตำบล" || s === "ตำบลคณะสงฆ์" || s === "2") return "tambon";
-  if (s === "province" || s === "จังหวัด" || s === "3") return "province";
-  if (s === "admin" || s === "ผู้ดูแลระบบ" || s === "ผู้ดูแล" || s === "4") return "admin";
+  if (s === "district" || s === "อำเภอ" || s === "3") return "district";
+  if (s === "province" || s === "จังหวัด" || s === "4") return "province";
+  if (s === "admin" || s === "ผู้ดูแลระบบ" || s === "ผู้ดูแลแพลตฟอร์ม" || s === "ผู้ดูแล" || s === "5") return "admin";
   return "";
 }
 
@@ -70,7 +73,9 @@ function publicUser(row) {
     watName: row.wat_name || "",
     sanghaTambon: row.sangha_tambon || "",
     district: row.district || "",
-    province: row.province || ""
+    province: row.province || "",
+    requestedLevel: parseAccessLevel(row.requested_level) || "",
+    requestedLabel: ACCESS_LABEL[parseAccessLevel(row.requested_level)] || ""
   };
 }
 
@@ -146,6 +151,16 @@ function appendViewScope(user, params, alias) {
       " AND (lower(w.name) = lower(" + m + ".wat_name)" +
       " OR EXISTS (SELECT 1 FROM monk_rains y WHERE y.monk_id = " + m + ".id AND lower(y.wat_name) = lower(w.name)))))";
   }
+  if (lv === "district") {
+    const t = clean(user.district);
+    if (!t) return " AND 1=0";
+    const n = p(params, t);
+    return " AND (" + m + ".district = " + n +
+      " OR EXISTS (SELECT 1 FROM monk_rains y WHERE y.monk_id = " + m + ".id AND y.district = " + n + ")" +
+      " OR EXISTS (SELECT 1 FROM phra_wats w WHERE w.district = " + n +
+      " AND (lower(w.name) = lower(" + m + ".wat_name)" +
+      " OR EXISTS (SELECT 1 FROM monk_rains y WHERE y.monk_id = " + m + ".id AND lower(y.wat_name) = lower(w.name)))))";
+  }
   if (lv === "province") {
     const t = clean(user.province);
     if (!t) return " AND 1=0";
@@ -180,6 +195,14 @@ function appendHomeScope(user, params, alias) {
       " OR EXISTS (SELECT 1 FROM phra_wats w WHERE w.sangha_tambon = " + n +
       " AND lower(w.name) = lower(" + m + ".wat_name)))";
   }
+  if (lv === "district") {
+    const t = clean(user.district);
+    if (!t) return " AND 1=0";
+    const n = p(params, t);
+    return " AND (" + m + ".district = " + n +
+      " OR EXISTS (SELECT 1 FROM phra_wats w WHERE w.district = " + n +
+      " AND lower(w.name) = lower(" + m + ".wat_name)))";
+  }
   if (lv === "province") {
     const t = clean(user.province);
     if (!t) return " AND 1=0";
@@ -212,6 +235,9 @@ function watInScope(user, wat) {
   if (user.accessLevel === "tambon") {
     return clean(w.sanghaTambon || w.sangha_tambon) === clean(user.sanghaTambon);
   }
+  if (user.accessLevel === "district") {
+    return clean(w.district) === clean(user.district);
+  }
   if (user.accessLevel === "province") {
     return clean(w.province) === clean(user.province);
   }
@@ -224,6 +250,9 @@ function filterWats(user, wats) {
 
 function filterWatsForPlaces(user, wats) {
   if (!user || user.accessLevel === "admin") return wats || [];
+  if (user.accessLevel === "district") {
+    return (wats || []).filter((w) => clean(w.district) === clean(user.district));
+  }
   if (user.accessLevel !== "tambon") return filterWats(user, wats);
   return (wats || []).filter((w) => {
     if (clean(w.sanghaTambon || w.sangha_tambon) === clean(user.sanghaTambon)) return true;
@@ -242,6 +271,9 @@ function filterSanghaTambons(user, tambons) {
   }
   if (user.accessLevel === "tambon") {
     return (tambons || []).filter((t) => clean(t.name) === clean(user.sanghaTambon));
+  }
+  if (user.accessLevel === "district") {
+    return (tambons || []).filter((t) => !t.district || clean(t.district) === clean(user.district));
   }
   if (user.accessLevel === "province") {
     return (tambons || []).filter((t) => !t.province || clean(t.province) === clean(user.province));
@@ -267,7 +299,7 @@ function scopePlaces(user, data) {
     groups = groups.filter((g) => g.wats.length);
   } else if (user.accessLevel === "tambon") {
     groups = groups.filter((g) => clean(g.name) === clean(user.sanghaTambon));
-  } else if (user.accessLevel === "province") {
+  } else if (user.accessLevel === "district" || user.accessLevel === "province") {
     groups = groups.filter((g) => g.wats.length || g.name === "(ยังไม่ระบุตำบลคณะสงฆ์)");
   }
   return { sanghaTambons: groups, wats: scopedWats };
@@ -275,7 +307,12 @@ function scopePlaces(user, data) {
 
 function canManagePlaces(user) {
   const lv = user && user.accessLevel;
-  return lv === "admin" || lv === "province" || lv === "tambon";
+  return lv === "admin" || lv === "province" || lv === "district" || lv === "tambon";
+}
+
+function canManageUsers(user) {
+  const lv = user && user.accessLevel;
+  return lv === "admin" || lv === "province" || lv === "district";
 }
 
 function assertPlaceWrite(user, action, payload) {
@@ -298,6 +335,16 @@ function assertPlaceWrite(user, action, payload) {
       if (sangha && sangha !== clean(user.sanghaTambon)) {
         throw deny(403, "เพิ่มวัดได้เฉพาะในตำบลคณะสงฆ์ของท่าน");
       }
+    }
+    if (user.province && province && province !== clean(user.province)) {
+      throw deny(403, "อยู่นอกจังหวัดของท่าน");
+    }
+    return;
+  }
+  if (lv === "district") {
+    const district = clean(body.district);
+    if (user.district && district && district !== clean(user.district)) {
+      throw deny(403, "ใช้ได้เฉพาะอำเภอของท่าน");
     }
     if (user.province && province && province !== clean(user.province)) {
       throw deny(403, "อยู่นอกจังหวัดของท่าน");
@@ -327,6 +374,11 @@ function homeBodyInScope(user, body, watRow) {
   if (user.accessLevel === "tambon") {
     if (sangha === clean(user.sanghaTambon)) return true;
     return !!(watRow && clean(watRow.sangha_tambon) === clean(user.sanghaTambon));
+  }
+  if (user.accessLevel === "district") {
+    const district = clean(b.district || (watRow && watRow.district) || "");
+    if (district === clean(user.district)) return true;
+    return !!(watRow && clean(watRow.district) === clean(user.district));
   }
   if (user.accessLevel === "province") {
     if (province === clean(user.province)) return true;
@@ -387,6 +439,8 @@ async function ensureAuthSchema(pool) {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `);
+  await pool.query(`ALTER TABLE phra_users ADD COLUMN IF NOT EXISTS requested_level TEXT NOT NULL DEFAULT ''`);
+  await pool.query(`ALTER TABLE phra_users ADD COLUMN IF NOT EXISTS requested_at TIMESTAMPTZ`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS phra_sessions (
       token TEXT PRIMARY KEY,
@@ -498,6 +552,9 @@ async function fillUserScope(pool, input) {
       if (!out.province) out.province = wat.province || "";
     }
   }
+  if (out.accessLevel === "wat") {
+    out.sanghaTambon = "";
+  }
   if (out.accessLevel === "tambon" && out.sanghaTambon) {
     const r = await pool.query(
       `SELECT name, district, province FROM phra_sangha_tambons
@@ -510,6 +567,15 @@ async function fillUserScope(pool, input) {
       if (!out.district) out.district = r.rows[0].district || "";
       if (!out.province) out.province = r.rows[0].province || "";
     }
+  }
+  if (out.accessLevel === "district" && out.district && !out.province) {
+    const r = await pool.query(
+      `SELECT province FROM phra_wats
+        WHERE lower(district) = lower($1) AND province <> ''
+        ORDER BY id LIMIT 1`,
+      [out.district]
+    );
+    if (r.rows[0]) out.province = r.rows[0].province || "";
   }
   return out;
 }
@@ -537,8 +603,17 @@ function readUserBody(body, isCreate) {
     province: clean(body && body.province).slice(0, 80)
   };
   if (Number.isNaN(out.watId)) out.watId = null;
-  if (accessLevel === "wat" && !out.watName && !out.watId) throw deny(400, "ระบุวัดของบัญชีนี้");
+  if (accessLevel === "wat") {
+    if (!out.watName && !out.watId) throw deny(400, "เลือกวัด");
+    if (!out.province) throw deny(400, "เลือกจังหวัด");
+    if (!out.district) throw deny(400, "เลือกอำเภอ");
+    out.sanghaTambon = "";
+  }
   if (accessLevel === "tambon" && !out.sanghaTambon) throw deny(400, "ระบุตำบลคณะสงฆ์");
+  if (accessLevel === "district") {
+    if (!out.district) throw deny(400, "ระบุอำเภอ");
+    if (!out.province) throw deny(400, "ระบุจังหวัด");
+  }
   if (accessLevel === "province" && !out.province) throw deny(400, "ระบุจังหวัด");
   if (accessLevel === "admin") {
     out.watId = null;
@@ -550,9 +625,14 @@ function readUserBody(body, isCreate) {
   return out;
 }
 
+function isPublicApiPath(path) {
+  return path === "/health" || path === "/login" || path === "/register"
+    || path === "/temples/provinces" || path === "/temples/districts" || path === "/temples/in-place";
+}
+
 function requireAuth(pool) {
   return async function (req, res, next) {
-    if (req.path === "/health" || req.path === "/login") return next();
+    if (isPublicApiPath(req.path)) return next();
     try {
       const user = await loadSession(pool, req);
       if (!user) return res.status(401).json({ error: "กรุณาเข้าสู่ระบบ", login: true });
@@ -566,9 +646,109 @@ function requireAuth(pool) {
 
 function requireAdmin(req, res, next) {
   if (!req.user || req.user.accessLevel !== "admin") {
-    return res.status(403).json({ error: "เฉพาะผู้ดูแลระบบ" });
+    return res.status(403).json({ error: "เฉพาะผู้ดูแลแพลตฟอร์ม" });
   }
   next();
+}
+
+function requireUserManager(req, res, next) {
+  if (!canManageUsers(req.user)) {
+    return res.status(403).json({ error: "เฉพาะผู้มีอำนาจอนุมัติผู้ใช้" });
+  }
+  next();
+}
+
+function canApproveRequested(actor, target) {
+  if (!actor || !target || !target.requestedLevel) return false;
+  const want = target.requestedLevel;
+  if (actor.accessLevel === "admin") return true;
+  if (want === "tambon") {
+    return actor.accessLevel === "district" && sameName(actor.district, target.district);
+  }
+  if (want === "district") {
+    return actor.accessLevel === "province" && sameName(actor.province, target.province);
+  }
+  return false;
+}
+
+function usersVisibleWhere(user, params) {
+  if (!user || user.accessLevel === "admin") return "";
+  if (user.accessLevel === "province") {
+    return " AND access_level <> 'admin' AND lower(province) = lower(" + p(params, user.province) + ")";
+  }
+  if (user.accessLevel === "district") {
+    return " AND access_level <> 'admin' AND lower(district) = lower(" + p(params, user.district) + ")";
+  }
+  return " AND 1=0";
+}
+
+async function registerUser(pool, body, wat) {
+  const username = normalizeUsername(body && body.username);
+  const password = String((body && body.password) || "");
+  const displayName = clean(body && body.displayName).slice(0, 80);
+  if (!username) throw deny(400, "ใส่ชื่อผู้ใช้");
+  if (!/^[a-z0-9._-]{3,40}$/.test(username)) {
+    throw deny(400, "ชื่อผู้ใช้ใช้ได้เฉพาะ a-z 0-9 . _ - ความยาว 3–40");
+  }
+  if (password.length < 6) throw deny(400, "รหัสผ่านอย่างน้อย 6 ตัว");
+  if (!wat || !wat.id) throw deny(400, "เลือกจังหวัด อำเภอ และวัด");
+  const r = await pool.query(
+    `INSERT INTO phra_users (username, password_hash, display_name, access_level, wat_id, wat_name, sangha_tambon, district, province)
+     VALUES ($1,$2,$3,'wat',$4,$5,'',$6,$7) RETURNING *`,
+    [username, hashPassword(password), displayName, wat.id, wat.name || "", wat.district || "", wat.province || ""]
+  );
+  const token = await createSession(pool, r.rows[0].id);
+  return { token, user: publicUser(r.rows[0]) };
+}
+
+async function requestLevel(pool, user, wanted) {
+  if (!user || !user.id) throw deny(401, "กรุณาเข้าสู่ระบบ");
+  const lv = parseAccessLevel(wanted);
+  if (!lv || lv === "admin" || lv === "wat") {
+    throw deny(400, "ขอได้เฉพาะระดับตำบลคณะสงฆ์ อำเภอ หรือจังหวัด");
+  }
+  if ((LEVEL_RANK[lv] || 0) <= (LEVEL_RANK[user.accessLevel] || 0)) {
+    throw deny(400, "มีระดับนี้หรือสูงกว่าอยู่แล้ว");
+  }
+  await pool.query(
+    "UPDATE phra_users SET requested_level=$2, requested_at=now(), updated_at=now() WHERE id=$1",
+    [user.id, lv]
+  );
+  const r = await pool.query("SELECT * FROM phra_users WHERE id=$1", [user.id]);
+  return publicUser(r.rows[0]);
+}
+
+async function approveRequestedLevel(pool, actor, targetId, body) {
+  const id = Number(targetId);
+  if (!id) throw deny(400, "ไม่พบผู้ใช้");
+  const cur = await pool.query("SELECT * FROM phra_users WHERE id=$1", [id]);
+  if (!cur.rowCount) throw deny(404, "ไม่พบผู้ใช้");
+  const target = publicUser(cur.rows[0]);
+  if (!canApproveRequested(actor, target)) throw deny(403, "ไม่มีสิทธิ์อนุมัติคำขอนี้");
+  const want = target.requestedLevel;
+  let sangha = clean(body && (body.sanghaTambon || body.sangha_tambon));
+  if (want === "tambon" && !sangha) throw deny(400, "เลือกตำบลคณะสงฆ์เมื่ออนุมัติ");
+  if (want !== "tambon") sangha = cur.rows[0].sangha_tambon || "";
+  const r = await pool.query(
+    `UPDATE phra_users SET access_level=$2, sangha_tambon=$3, requested_level='', requested_at=NULL, updated_at=now()
+      WHERE id=$1 RETURNING *`,
+    [id, want, sangha]
+  );
+  return publicUser(r.rows[0]);
+}
+
+async function rejectRequestedLevel(pool, actor, targetId) {
+  const id = Number(targetId);
+  if (!id) throw deny(400, "ไม่พบผู้ใช้");
+  const cur = await pool.query("SELECT * FROM phra_users WHERE id=$1", [id]);
+  if (!cur.rowCount) throw deny(404, "ไม่พบผู้ใช้");
+  const target = publicUser(cur.rows[0]);
+  if (!canApproveRequested(actor, target)) throw deny(403, "ไม่มีสิทธิ์ปฏิเสธคำขอนี้");
+  const r = await pool.query(
+    "UPDATE phra_users SET requested_level='', requested_at=NULL, updated_at=now() WHERE id=$1 RETURNING *",
+    [id]
+  );
+  return publicUser(r.rows[0]);
 }
 
 module.exports = {
@@ -610,5 +790,13 @@ module.exports = {
   fillUserScope,
   readUserBody,
   requireAuth,
-  requireAdmin
+  requireAdmin,
+  requireUserManager,
+  canManageUsers,
+  canApproveRequested,
+  usersVisibleWhere,
+  registerUser,
+  requestLevel,
+  approveRequestedLevel,
+  rejectRequestedLevel
 };

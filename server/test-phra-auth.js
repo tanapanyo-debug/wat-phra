@@ -13,7 +13,9 @@ const {
   canManagePlaces,
   assertPlaceWrite,
   homeBodyInScope,
-  ACCESS_LABEL
+  ACCESS_LABEL,
+  canManageUsers,
+  canApproveRequested
 } = require("./lib/phraAuth");
 
 function eq(got, want, label) {
@@ -27,7 +29,9 @@ eq(parseAccessLevel("วัด"), "wat", "level wat");
 eq(parseAccessLevel("ตำบล"), "tambon", "level tambon");
 eq(parseAccessLevel("ตำบลคณะสงฆ์"), "tambon", "level sangha tambon");
 eq(parseAccessLevel("จังหวัด"), "province", "level province");
+eq(parseAccessLevel("อำเภอ"), "district", "level district");
 eq(parseAccessLevel("ผู้ดูแลระบบ"), "admin", "level admin");
+eq(parseAccessLevel("ผู้ดูแลแพลตฟอร์ม"), "admin", "level platform admin");
 eq(ACCESS_LABEL.wat, "วัด", "label wat");
 
 eq(normalizeUsername(" Admin "), "admin", "username");
@@ -90,6 +94,21 @@ eq(places.sanghaTambons[0].wats.join(","), "วัดอินทาราม", 
 
 eq(canManagePlaces(watUser), false, "wat cannot manage places");
 eq(canManagePlaces(tambonUser), true, "tambon can assign");
+eq(canManagePlaces({ accessLevel: "district", district: "พระนครศรีอยุธยา" }), true, "district can assign");
+eq(canManageUsers({ accessLevel: "admin" }), true, "admin users");
+eq(canManageUsers({ accessLevel: "district" }), true, "district users");
+eq(canManageUsers(watUser), false, "wat no users page");
+eq(canApproveRequested({ accessLevel: "district", district: "พระนครศรีอยุธยา" }, { requestedLevel: "tambon", district: "พระนครศรีอยุธยา" }), true, "district approves tambon");
+eq(canApproveRequested({ accessLevel: "province", province: "พระนครศรีอยุธยา" }, { requestedLevel: "district", province: "พระนครศรีอยุธยา" }), true, "province approves district");
+eq(canApproveRequested({ accessLevel: "district", district: "พระนครศรีอยุธยา" }, { requestedLevel: "province", province: "พระนครศรีอยุธยา" }), false, "district cannot approve province");
+eq(canApproveRequested({ accessLevel: "admin" }, { requestedLevel: "province", province: "พระนครศรีอยุธยา" }), true, "platform approves province");
+
+const distUser = { accessLevel: "district", district: "พระนครศรีอยุธยา" };
+eq(appendViewScope(distUser, [], "m").indexOf("district") >= 0, true, "district scope");
+eq(filterWats(distUser, [
+  { id: 1, name: "วัดอินทาราม", district: "พระนครศรีอยุธยา" },
+  { id: 3, name: "วัดอื่น", district: "เมืองลพบุรี" }
+]).length, 1, "filter district");
 
 let threw = false;
 try { assertPlaceWrite(watUser, "assign", { name: "ท่าวาสุกรี เขต ๒" }); } catch (e) { threw = e.status === 403; }

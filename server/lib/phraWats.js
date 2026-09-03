@@ -654,7 +654,7 @@ async function assignSanghaWats(pool, body) {
         WHERE lower(district) = lower($1) AND sangha_tambon = $2
           AND ($4 = '' OR province = '' OR lower(province) = lower($4))
           AND NOT (id = ANY($3::int[]))
-        RETURNING name, district, tambon, province, sangha_tambon`,
+        RETURNING id, name, district, tambon, province, sangha_tambon`,
       [district, name, ids, province]
     );
     let assigned = { rows: [] };
@@ -663,8 +663,24 @@ async function assignSanghaWats(pool, body) {
         `UPDATE phra_wats SET sangha_tambon = $1
           WHERE id = ANY($2::int[]) AND lower(district) = lower($3)
             AND ($4 = '' OR province = '' OR lower(province) = lower($4))
-          RETURNING name, district, tambon, province, sangha_tambon`,
+          RETURNING id, name, district, tambon, province, sangha_tambon`,
         [name, ids, district, province]
+      );
+    }
+    const clearedIds = cleared.rows.map((w) => w.id);
+    const assignedIds = assigned.rows.map((w) => w.id);
+    if (clearedIds.length) {
+      await client.query(
+        `UPDATE phra_users SET sangha_tambon = '', updated_at = now()
+          WHERE access_level = 'wat' AND wat_id = ANY($1::int[])`,
+        [clearedIds]
+      );
+    }
+    if (assignedIds.length) {
+      await client.query(
+        `UPDATE phra_users SET sangha_tambon = $1, updated_at = now()
+          WHERE access_level = 'wat' AND wat_id = ANY($2::int[])`,
+        [name, assignedIds]
       );
     }
     for (const w of cleared.rows.concat(assigned.rows)) {

@@ -445,13 +445,24 @@ body.places-on #btn-logout {
 }
 #page-login[hidden] { display: none; }
 .login-card {
-  width: min(420px, 100%);
+  width: min(480px, 100%);
+  max-height: 92vh;
+  overflow: auto;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 22px 20px 20px;
   box-shadow: 0 12px 32px rgba(36,48,56,.08);
 }
+.login-tabs { display: flex; gap: 6px; margin: 0 0 12px; }
+.login-tabs button {
+  flex: 1;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 8px 10px;
+  font-weight: 700;
+}
+.login-tabs button.on { background: var(--teal); color: #fff; border-color: var(--teal); }
 .login-card b { display: block; font-size: 1.2rem; margin-bottom: 4px; }
 .login-card p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
 .login-card label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
@@ -638,16 +649,46 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
 </head>
 <body class="need-login">
 <div id="page-login" hidden>
-  <form class="login-card" id="login-form">
+  <div class="login-card">
     <b>ฐานข้อมูลพระภิกษุ</b>
-    <p>เข้าใช้ตามระดับ วัด · ตำบลคณะสงฆ์ · จังหวัด · ผู้ดูแลระบบ</p>
-    <label>ชื่อผู้ใช้</label>
-    <input id="login-user" autocomplete="username" required>
-    <label>รหัสผ่าน</label>
-    <input id="login-pass" type="password" autocomplete="current-password" required>
-    <p class="msg" id="login-err"></p>
-    <button type="submit" class="btn" style="width:100%;margin-top:8px">เข้าสู่ระบบ</button>
-  </form>
+    <div class="login-tabs">
+      <button type="button" class="on" id="tab-login">เข้าสู่ระบบ</button>
+      <button type="button" id="tab-signup">สมัครใช้</button>
+    </div>
+    <form id="login-form">
+      <p>เข้าใช้ตามระดับ วัด · ตำบลคณะสงฆ์ · อำเภอ · จังหวัด · ผู้ดูแลแพลตฟอร์ม</p>
+      <label>ชื่อผู้ใช้</label>
+      <input id="login-user" autocomplete="username" required>
+      <label>รหัสผ่าน</label>
+      <input id="login-pass" type="password" autocomplete="current-password" required>
+      <p class="msg" id="login-err"></p>
+      <button type="submit" class="btn" style="width:100%;margin-top:8px">เข้าสู่ระบบ</button>
+    </form>
+    <form id="signup-form" hidden>
+      <p>สมัครระดับวัดก่อน ใช้ได้ทันที · เลือกจังหวัด แล้วอำเภอ แล้ววัด · ตำบลคณะสงฆ์ให้ผู้มีอำนาจจัดทีหลัง · ระดับสูงกว่าต้องรออนุมัติ</p>
+      <label>ชื่อผู้ใช้</label>
+      <input id="signup-user" maxlength="40" autocomplete="username" required>
+      <label>รหัสผ่าน</label>
+      <input id="signup-pass" type="password" maxlength="80" autocomplete="new-password" required>
+      <label>ชื่อที่แสดง</label>
+      <input id="signup-display" maxlength="80" placeholder="เช่น พระสมชาย">
+      <label>จังหวัด</label>
+      <select id="signup-province" required>
+        <option value="">เลือกจังหวัด</option>
+      </select>
+      <label>อำเภอ</label>
+      <select id="signup-district" required>
+        <option value="">เลือกจังหวัดก่อน</option>
+      </select>
+      <label>วัด</label>
+      <select id="signup-wat" required>
+        <option value="">เลือกอำเภอก่อน</option>
+      </select>
+      <p class="hint">ระดับครั้งแรกเป็นวัด · ตำบลคณะสงฆ์ยังไม่ต้องเลือก</p>
+      <p class="msg" id="signup-err"></p>
+      <button type="submit" class="btn" style="width:100%;margin-top:8px">สมัครแล้วเข้าใช้</button>
+    </form>
+  </div>
 </div>
 <header class="top">
   <b>ฐานข้อมูลพระภิกษุ</b>
@@ -661,6 +702,18 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
   </nav>
 </header>
 <main class="wrap" id="page-list">
+  <div class="card" id="level-request-box" hidden>
+    <p class="hint" style="margin:0 0 8px" id="level-request-now"></p>
+    <div class="bar" style="margin:0">
+      <select id="req-level">
+        <option value="tambon">ขอระดับตำบลคณะสงฆ์</option>
+        <option value="district">ขอระดับอำเภอ</option>
+        <option value="province">ขอระดับจังหวัด</option>
+      </select>
+      <button type="button" class="btn" id="btn-req-level">ส่งคำขอ</button>
+    </div>
+    <p class="msg" id="req-level-err"></p>
+  </div>
   <div class="bar">
     <input id="q" placeholder="ค้นชื่อ ฉายา นามเดิม วัด เลขบัตร หรือพาสปอร์ต" autocomplete="off">
     <select id="yearBe">
@@ -776,7 +829,9 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
 <section class="wrap" id="page-users" hidden>
   <div class="card">
     <h2 style="margin:0 0 8px;font-size:1.15rem">ผู้ใช้ตามระดับ</h2>
-    <p class="hint">วัด เห็นเฉพาะวัดตนเอง · ตำบลคณะสงฆ์เห็นวัดในตำบลนั้น · จังหวัดเห็นจังหวัดตนเอง · ผู้ดูแลระบบใช้ได้ทั้งหมด</p>
+    <p class="hint">สมัครใหม่เป็นระดับวัด · เลือกจังหวัด แล้วอำเภอ แล้ววัด · ตำบลคณะสงฆ์จัดภายหลัง · ตำบลคณะสงฆ์ให้อำเภอหรือผู้ดูแลแพลตฟอร์มอนุมัติ · อำเภอให้จังหวัดหรือผู้ดูแลแพลตฟอร์มอนุมัติ · จังหวัดให้ผู้ดูแลแพลตฟอร์มอนุมัติ</p>
+    <div id="user-pending"></div>
+    <div id="user-edit-form">
     <div class="grid2">
       <div>
         <label>ชื่อผู้ใช้</label>
@@ -795,24 +850,33 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
         <select id="user-level">
           <option value="wat">วัด</option>
           <option value="tambon">ตำบลคณะสงฆ์</option>
+          <option value="district">อำเภอ</option>
           <option value="province">จังหวัด</option>
-          <option value="admin">ผู้ดูแลระบบ</option>
+          <option value="admin">ผู้ดูแลแพลตฟอร์ม</option>
+        </select>
+      </div>
+      <div id="user-province-wrap">
+        <label>จังหวัด</label>
+        <select id="user-province">
+          <option value="">เลือกจังหวัด</option>
+        </select>
+      </div>
+      <div id="user-district-wrap">
+        <label>อำเภอ</label>
+        <select id="user-district">
+          <option value="">เลือกจังหวัดก่อน</option>
         </select>
       </div>
       <div id="user-wat-wrap">
         <label>วัด</label>
-        <input id="user-wat" maxlength="160" list="user-wat-list" placeholder="เช่น วัดอินทาราม">
-        <datalist id="user-wat-list"></datalist>
+        <select id="user-wat">
+          <option value="">เลือกอำเภอก่อน</option>
+        </select>
       </div>
-      <div id="user-tambon-wrap">
+      <div id="user-tambon-wrap" hidden>
         <label>ตำบลคณะสงฆ์</label>
-        <input id="user-tambon" maxlength="80" list="user-tambon-list">
+        <input id="user-tambon" maxlength="80" list="user-tambon-list" placeholder="จัดภายหลัง หรือใส่เมื่ออนุมัติระดับตำบล">
         <datalist id="user-tambon-list"></datalist>
-      </div>
-      <div id="user-province-wrap">
-        <label>จังหวัด</label>
-        <input id="user-province" maxlength="80" list="user-province-list" placeholder="เช่น พระนครศรีอยุธยา">
-        <datalist id="user-province-list"></datalist>
       </div>
     </div>
     <div class="bar" style="margin-top:12px">
@@ -820,6 +884,8 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       <button type="button" class="ghost" id="btn-user-clear">ล้างฟอร์ม</button>
     </div>
     <p class="msg" id="user-err"></p>
+    </div>
+    <p class="msg" id="user-err-list"></p>
     <div id="user-list"></div>
     <h3 style="margin:22px 0 8px;font-size:1rem">ปีจำพรรษาที่ปิดแล้ว</h3>
     <p class="hint">ปิดแล้ววัดแก้ไม่ได้ · กดเปิดปีให้แก้เมื่อต้องแก้ต่อ</p>
@@ -1485,7 +1551,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       headers: { "Content-Type": "application/json" }
     }, opt || {}));
     const data = await res.json().catch(function () { return {}; });
-    if (res.status === 401 && path !== "/login") showLogin();
+    if (res.status === 401 && path !== "/login" && path !== "/register" && path.indexOf("/temples/") !== 0) showLogin();
     if (!res.ok) throw new Error(data.error || "ไม่สำเร็จ");
     return data;
   }
@@ -1507,13 +1573,15 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     if (!me) return;
     const lv = me.accessLevel;
     $("nav-places").hidden = lv === "wat";
-    $("nav-users").hidden = lv !== "admin";
+    $("nav-users").hidden = lv !== "admin" && lv !== "province" && lv !== "district";
     $("whoami").textContent = (me.displayName || me.username) + " · " + (me.accessLabel || "");
     $("btn-logout").hidden = false;
     const sangha = $("sanghaTambon");
     const wat = $("watName");
     sangha.disabled = lv === "wat" || lv === "tambon";
     wat.disabled = lv === "wat";
+    if ($("user-edit-form")) $("user-edit-form").hidden = lv !== "admin";
+    paintLevelRequest();
     if (lv === "tambon" && me.sanghaTambon) {
       if ([].some.call(sangha.options, function (o) { return o.value === me.sanghaTambon; })) {
         sangha.value = me.sanghaTambon;
@@ -1561,7 +1629,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     });
   }
   function showUsers() {
-    if (!me || me.accessLevel !== "admin") return;
+    if (!me || (me.accessLevel !== "admin" && me.accessLevel !== "province" && me.accessLevel !== "district")) return;
     document.body.classList.remove("places-on");
     $("dlg").hidden = true;
     $("page-list").hidden = true;
@@ -1571,8 +1639,11 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     $("nav-places").classList.remove("on");
     $("nav-users").classList.add("on");
     loadUsers().catch(function (e) {
-      $("user-err").textContent = e.message || "โหลดไม่สำเร็จ";
+      const msg = e.message || "โหลดไม่สำเร็จ";
+      if ($("user-err")) $("user-err").textContent = msg;
+      if ($("user-err-list")) $("user-err-list").textContent = msg;
     });
+    if (me.accessLevel === "admin") fillUserProvinces("").catch(function () {});
     loadClosedYears().catch(function () {});
   }
 
@@ -5425,11 +5496,153 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       $("login-err").textContent = e.message || "เข้าสู่ระบบไม่สำเร็จ";
     }
   };
+  function setAuthTab(which) {
+    const loginOn = which === "login";
+    $("tab-login").classList.toggle("on", loginOn);
+    $("tab-signup").classList.toggle("on", !loginOn);
+    $("login-form").hidden = !loginOn;
+    $("signup-form").hidden = loginOn;
+    $("login-err").textContent = "";
+    $("signup-err").textContent = "";
+    if (!loginOn) loadSignupPlaces();
+  }
+  $("tab-login").onclick = function () { setAuthTab("login"); };
+  $("tab-signup").onclick = function () { setAuthTab("signup"); };
+  async function loadSignupPlaces() {
+    const sel = $("signup-province");
+    if (sel.getAttribute("data-loaded") === "1") return;
+    try {
+      const data = await api("/temples/provinces");
+      const names = placeNames(data.provinces || []);
+      sel.innerHTML = '<option value="">เลือกจังหวัด</option>' + names.map(function (p) {
+        return '<option value="' + esc(p) + '">' + esc(p) + "</option>";
+      }).join("");
+      sel.setAttribute("data-loaded", "1");
+    } catch (e) {
+      $("signup-err").textContent = e.message || "โหลดจังหวัดไม่สำเร็จ";
+    }
+  }
+  $("signup-province").onchange = async function () {
+    $("signup-err").textContent = "";
+    try {
+      await fillCascadeDistrict($("signup-district"), $("signup-province").value, "");
+      $("signup-wat").innerHTML = '<option value="">เลือกอำเภอก่อน</option>';
+    } catch (e) {
+      $("signup-err").textContent = e.message || "โหลดอำเภอไม่สำเร็จ";
+    }
+  };
+  $("signup-district").onchange = async function () {
+    $("signup-err").textContent = "";
+    try {
+      await fillCascadeWats($("signup-wat"), $("signup-province").value, $("signup-district").value, "");
+    } catch (e) {
+      $("signup-err").textContent = e.message || "โหลดวัดไม่สำเร็จ";
+    }
+  };
+  $("signup-form").onsubmit = async function (ev) {
+    ev.preventDefault();
+    $("signup-err").textContent = "";
+    try {
+      const data = await api("/register", {
+        method: "POST",
+        body: JSON.stringify({
+          username: $("signup-user").value,
+          password: $("signup-pass").value,
+          displayName: $("signup-display").value,
+          province: $("signup-province").value,
+          district: $("signup-district").value,
+          watName: $("signup-wat").value
+        })
+      });
+      $("signup-pass").value = "";
+      await onLoggedIn(data.user);
+    } catch (e) {
+      $("signup-err").textContent = e.message || "สมัครไม่สำเร็จ";
+    }
+  };
+  async function fillCascadeDistrict(sel, province, keep) {
+    if (!province) {
+      sel.innerHTML = '<option value="">เลือกจังหวัดก่อน</option>';
+      return;
+    }
+    const data = await api("/temples/districts?province=" + encodeURIComponent(province));
+    const names = placeNames(data.districts || []);
+    sel.innerHTML = '<option value="">เลือกอำเภอ</option>' + names.map(function (n) {
+      return '<option value="' + esc(n) + '">' + esc(n) + "</option>";
+    }).join("");
+    if (keep && names.indexOf(keep) >= 0) sel.value = keep;
+  }
+  async function fillCascadeWats(sel, province, district, keep) {
+    if (!province || !district) {
+      sel.innerHTML = '<option value="">เลือกอำเภอก่อน</option>';
+      return;
+    }
+    const data = await api("/temples/in-place?province=" + encodeURIComponent(province) + "&district=" + encodeURIComponent(district));
+    const names = (data.wats || []).map(function (w) { return w.name; }).filter(Boolean);
+    sel.innerHTML = '<option value="">เลือกวัด</option>' + names.map(function (n) {
+      return '<option value="' + esc(n) + '">' + esc(n) + "</option>";
+    }).join("");
+    if (keep && names.indexOf(keep) >= 0) sel.value = keep;
+    else if (keep) {
+      sel.insertAdjacentHTML("beforeend", '<option value="' + esc(keep) + '">' + esc(keep) + "</option>");
+      sel.value = keep;
+    }
+  }
+  function paintLevelRequest() {
+    const box = $("level-request-box");
+    if (!box || !me) return;
+    const lv = me.accessLevel;
+    if (lv === "admin") {
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    const now = $("level-request-now");
+    if (me.requestedLevel) {
+      now.textContent = "ระดับปัจจุบัน " + (me.accessLabel || "") + " · รออนุมัติระดับ " + (me.requestedLabel || me.requestedLevel);
+      $("req-level").hidden = true;
+      $("btn-req-level").hidden = true;
+    } else {
+      now.textContent = "ระดับปัจจุบัน " + (me.accessLabel || "วัด") + " · ใช้ได้ทันที · ระดับสูงกว่าต้องรออนุมัติ";
+      $("req-level").hidden = lv === "province";
+      $("btn-req-level").hidden = lv === "province";
+    }
+    $("req-level-err").textContent = "";
+  }
+  $("btn-req-level").onclick = async function () {
+    $("req-level-err").textContent = "";
+    try {
+      const data = await api("/me/request-level", {
+        method: "POST",
+        body: JSON.stringify({ accessLevel: $("req-level").value })
+      });
+      me = data.user;
+      paintLevelRequest();
+      $("req-level-err").textContent = "ส่งคำขอแล้ว รอผู้มีอำนาจอนุมัติ";
+    } catch (e) {
+      $("req-level-err").textContent = e.message || "ส่งคำขอไม่สำเร็จ";
+    }
+  };
   function toggleUserScopeFields() {
     const lv = $("user-level").value;
+    $("user-province-wrap").hidden = lv === "admin";
+    $("user-district-wrap").hidden = lv === "admin" || lv === "province";
     $("user-wat-wrap").hidden = lv !== "wat";
-    $("user-tambon-wrap").hidden = lv !== "tambon" && lv !== "wat";
-    $("user-province-wrap").hidden = lv !== "province" && lv !== "tambon" && lv !== "wat";
+    $("user-tambon-wrap").hidden = lv !== "tambon";
+  }
+  async function fillUserProvinces(keep) {
+    const sel = $("user-province");
+    if (!sel) return;
+    const data = await api("/temples/provinces").catch(function () { return { provinces: [] }; });
+    const names = placeNames(data.provinces || []);
+    sel.innerHTML = '<option value="">เลือกจังหวัด</option>' + names.map(function (p) {
+      return '<option value="' + esc(p) + '">' + esc(p) + "</option>";
+    }).join("");
+    if (keep && names.indexOf(keep) >= 0) sel.value = keep;
+    else if (keep) {
+      sel.insertAdjacentHTML("beforeend", '<option value="' + esc(keep) + '">' + esc(keep) + "</option>");
+      sel.value = keep;
+    }
   }
   function clearUserForm() {
     editingUser = null;
@@ -5437,24 +5650,33 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     $("user-password").value = "";
     $("user-display").value = "";
     $("user-level").value = "wat";
-    $("user-wat").value = "";
+    $("user-wat").innerHTML = '<option value="">เลือกอำเภอก่อน</option>';
+    $("user-district").innerHTML = '<option value="">เลือกจังหวัดก่อน</option>';
     $("user-tambon").value = "";
     $("user-province").value = "";
     $("user-err").textContent = "";
     toggleUserScopeFields();
   }
-  function fillUserForm(u) {
+  async function fillUserForm(u) {
     editingUser = u && u.id ? u.id : null;
     $("user-username").value = (u && u.username) || "";
     $("user-password").value = "";
     $("user-display").value = (u && u.displayName) || "";
     $("user-level").value = (u && u.accessLevel) || "wat";
-    $("user-wat").value = (u && u.watName) || "";
     $("user-tambon").value = (u && u.sanghaTambon) || "";
-    $("user-province").value = (u && u.province) || "";
     $("user-err").textContent = "";
     toggleUserScopeFields();
+    await fillUserProvinces((u && u.province) || "");
+    await fillCascadeDistrict($("user-district"), (u && u.province) || "", (u && u.district) || "");
+    await fillCascadeWats($("user-wat"), (u && u.province) || "", (u && u.district) || "", (u && u.watName) || "");
   }
+  $("user-province").onchange = async function () {
+    await fillCascadeDistrict($("user-district"), $("user-province").value, "");
+    $("user-wat").innerHTML = '<option value="">เลือกอำเภอก่อน</option>';
+  };
+  $("user-district").onchange = async function () {
+    await fillCascadeWats($("user-wat"), $("user-province").value, $("user-district").value, "");
+  };
   async function loadClosedYears() {
     const box = $("year-lock-list");
     if (!box) return;
@@ -5493,20 +5715,76 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     }
   }
   async function loadUsers() {
-    $("user-err").textContent = "";
+    const errEl = $("user-err") || $("user-err-list");
+    if (errEl) errEl.textContent = "";
+    if ($("user-err-list")) $("user-err-list").textContent = "";
     const data = await api("/users");
     const list = data.users || [];
+    const pending = list.filter(function (u) { return u.requestedLevel; });
+    const pendBox = $("user-pending");
+    if (pendBox) {
+      pendBox.innerHTML = pending.length
+        ? "<h3 style=\"margin:12px 0 8px;font-size:1rem\">รออนุมัติ</h3>" +
+          pending.map(function (u) {
+            const tambonField = u.requestedLevel === "tambon"
+              ? '<input data-approve-tambon="' + u.id + '" maxlength="80" placeholder="ตำบลคณะสงฆ์" list="user-tambon-list" style="min-width:140px">'
+              : "";
+            const acts = u.canApprove
+              ? tambonField +
+                ' <button type="button" class="btn tiny" data-approve="' + u.id + '">อนุมัติ</button>' +
+                ' <button type="button" class="ghost tiny" data-reject="' + u.id + '">ปฏิเสธ</button>'
+              : "<span class=\"hint\">รอผู้อนุมัติตามชั้น</span>";
+            return '<div class="card" style="margin:0 0 8px"><b>' + esc(u.displayName || u.username) +
+              "</b> ขอระดับ " + esc(u.requestedLabel || u.requestedLevel) +
+              " · " + esc(u.watName || u.district || u.province || "") +
+              '<div class="bar" style="margin:8px 0 0">' + acts + "</div></div>";
+          }).join("")
+        : "";
+      pendBox.querySelectorAll("[data-approve]").forEach(function (btn) {
+        btn.onclick = async function () {
+          const id = btn.getAttribute("data-approve");
+          const tambonEl = pendBox.querySelector('[data-approve-tambon="' + id + '"]');
+          try {
+            await api("/users/" + id + "/approve", {
+              method: "POST",
+              body: JSON.stringify({ sanghaTambon: tambonEl ? tambonEl.value : "" })
+            });
+            await loadUsers();
+          } catch (e) {
+            if ($("user-err-list")) $("user-err-list").textContent = e.message || "อนุมัติไม่สำเร็จ";
+            else $("user-err").textContent = e.message || "อนุมัติไม่สำเร็จ";
+          }
+        };
+      });
+      pendBox.querySelectorAll("[data-reject]").forEach(function (btn) {
+        btn.onclick = async function () {
+          try {
+            await api("/users/" + btn.getAttribute("data-reject") + "/reject", { method: "POST", body: "{}" });
+            await loadUsers();
+          } catch (e) {
+            if ($("user-err-list")) $("user-err-list").textContent = e.message || "ปฏิเสธไม่สำเร็จ";
+            else $("user-err").textContent = e.message || "ปฏิเสธไม่สำเร็จ";
+          }
+        };
+      });
+    }
+    const isAdmin = me && me.accessLevel === "admin";
     $("user-list").innerHTML = list.length
       ? '<table class="rpt"><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ</th><th>ระดับ</th><th>เขต</th><th></th></tr></thead><tbody>' +
         list.map(function (u) {
-          const zone = u.accessLevel === "wat" ? (u.watName || "")
+          const zone = u.accessLevel === "wat" ? ((u.province || "") + " · " + (u.district || "") + " · " + (u.watName || ""))
             : u.accessLevel === "tambon" ? (u.sanghaTambon || "")
+            : u.accessLevel === "district" ? ((u.province || "") + " · " + (u.district || ""))
             : u.accessLevel === "province" ? (u.province || "")
             : "ทั้งหมด";
+          const wait = u.requestedLevel ? " · รอ " + (u.requestedLabel || "") : "";
+          const acts = isAdmin
+            ? '<button type="button" class="ghost tiny" data-edit="' + u.id + '">แก้</button> ' +
+              '<button type="button" class="danger tiny" data-del="' + u.id + '">ลบ</button>'
+            : "";
           return "<tr><td>" + esc(u.username) + "</td><td>" + esc(u.displayName || "") + "</td><td>" +
-            esc(u.accessLabel || u.accessLevel) + "</td><td>" + esc(zone) +
-            '</td><td><button type="button" class="ghost tiny" data-edit="' + u.id + '">แก้</button> ' +
-            '<button type="button" class="danger tiny" data-del="' + u.id + '">ลบ</button></td></tr>';
+            esc((u.accessLabel || u.accessLevel) + wait) + "</td><td>" + esc(zone) +
+            "</td><td>" + acts + "</td></tr>";
         }).join("") + "</tbody></table>"
       : '<p class="empty">ยังไม่มีผู้ใช้</p>';
     $("user-list").querySelectorAll("[data-edit]").forEach(function (btn) {
@@ -5540,6 +5818,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       accessLevel: $("user-level").value,
       watName: $("user-wat").value,
       sanghaTambon: $("user-tambon").value,
+      district: $("user-district").value,
       province: $("user-province").value
     };
     try {
@@ -5555,11 +5834,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     }
   };
   function fillUserDatalists() {
-    const wats = (watCatalog || []).map(function (w) { return w.name; }).filter(Boolean);
-    const uniq = wats.filter(function (n, i) { return wats.indexOf(n) === i; });
-    $("user-wat-list").innerHTML = uniq.map(function (n) {
-      return '<option value="' + esc(n) + '">';
-    }).join("");
+    if (!$("user-tambon-list")) return;
     $("user-tambon-list").innerHTML = (places || []).map(function (g) {
       return '<option value="' + esc(g.name) + '">';
     }).join("");
@@ -5587,10 +5862,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       await loadPlaces();
       fillUserDatalists();
       await load();
-      const prov = await api("/temples/provinces").catch(function () { return { provinces: [] }; });
-      $("user-province-list").innerHTML = placeNames(prov.provinces || []).map(function (n) {
-        return '<option value="' + esc(n) + '">';
-      }).join("");
+      await fillUserProvinces("");
     } catch (e) {
       $("list").innerHTML = '<div class="empty">' + (e.message || "เปิดเซิร์ฟเวอร์ไม่สำเร็จ") + "</div>";
     }
@@ -5643,7 +5915,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     } else {
       placeProvince = "";
     }
-    $("placeProvince").disabled = !!(me && (me.accessLevel === "province" || me.accessLevel === "tambon") && me.province);
+    $("placeProvince").disabled = !!(me && (me.accessLevel === "province" || me.accessLevel === "district" || me.accessLevel === "tambon") && me.province);
     placeProvInited = true;
     } finally { placeBusy = false; }
   }
@@ -5664,7 +5936,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       if (samePlaceProv(w) && w.district && names.indexOf(w.district) < 0) names.push(w.district);
     });
     names.sort(function (a, b) { return a.localeCompare(b, "th"); });
-    const keep = placeDistrict || (me && me.accessLevel === "tambon" && me.district ? me.district : "");
+    const keep = placeDistrict || (me && (me.accessLevel === "tambon" || me.accessLevel === "district") && me.district ? me.district : "");
     placeBusy = true;
     try {
       sel.innerHTML = '<option value="">เลือกอำเภอ</option>' + names.map(function (d) {
@@ -5676,7 +5948,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       } else {
         placeDistrict = "";
       }
-      sel.disabled = !!(me && me.accessLevel === "tambon" && me.district);
+      sel.disabled = !!(me && (me.accessLevel === "tambon" || me.accessLevel === "district") && me.district);
     } finally { placeBusy = false; }
   }
   async function ensurePlaceDistrict() {
