@@ -42,6 +42,7 @@ const {
   seedAdmin,
   migratePlatformAdminEmail,
   applyAdminPassword,
+  bindPlatformAdminHome,
   requestPasswordReset,
   resetPasswordWithCode,
   requireAuth,
@@ -2176,6 +2177,7 @@ async function start() {
   const seeded = await seedAdmin(pool);
   await migratePlatformAdminEmail(pool);
   const reset = await applyAdminPassword(pool);
+  const adminHome = await bindPlatformAdminHome(pool);
   const mailCopied = await importAccountingMail(pool).catch(() => false);
   app.listen(PORT, BIND, () => {
     console.log("Monk database  http://" + (BIND === "127.0.0.1" ? "localhost" : BIND) + ":" + PORT);
@@ -2187,6 +2189,7 @@ async function start() {
       console.log("created first admin user=" + seeded.username);
     }
     if (reset) console.log("admin password taken from PHRA_ADMIN_PASSWORD");
+    if (adminHome) console.log("platform admin home = Wat Intharam");
     if (mailCopied) console.log("forgot-password mail copied from accounting SMTP");
   });
 }

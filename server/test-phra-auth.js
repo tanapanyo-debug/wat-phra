@@ -17,7 +17,9 @@ const {
   canManageUsers,
   canApproveRequested,
   isEmail,
-  PLATFORM_ADMIN_EMAIL
+  PLATFORM_ADMIN_EMAIL,
+  ADMIN_HOME_WAT,
+  pickAdminHomeWat
 } = require("./lib/phraAuth");
 
 function eq(got, want, label) {
@@ -40,6 +42,11 @@ eq(normalizeUsername(" Admin "), "admin", "username");
 eq(isEmail("ra_yut@hotmail.com"), true, "admin email");
 eq(isEmail("admin"), false, "admin not email");
 eq(PLATFORM_ADMIN_EMAIL, "ra_yut@hotmail.com", "platform admin email");
+eq(ADMIN_HOME_WAT, "วัดอินทาราม", "admin home wat");
+eq(pickAdminHomeWat([
+  { id: 9, name: "วัดอินทาราม", district: "เมือง", province: "ชลบุรี" },
+  { id: 1, name: "วัดอินทาราม", district: "พระนครศรีอยุธยา", province: "พระนครศรีอยุธยา", sangha_tambon: "ท่าวาสุกรี เขต ๒" }
+]).id, 1, "admin home prefers Ayutthaya Intharam");
 
 const hashed = hashPassword("secret1");
 eq(verifyPassword("secret1", hashed), true, "hash ok");

@@ -34,6 +34,15 @@ function parseAccessLevel(v) {
 }
 
 const PLATFORM_ADMIN_EMAIL = "ra_yut@hotmail.com";
+const ADMIN_HOME_WAT = "วัดอินทาราม";
+const ADMIN_HOME_PROVINCE = "พระนครศรีอยุธยา";
+
+function pickAdminHomeWat(rows) {
+  const name = (s) => String(s || "").replace(/\s+/g, " ").trim();
+  const list = (rows || []).filter((w) => name(w.name) === ADMIN_HOME_WAT);
+  if (!list.length) return null;
+  return list.find((w) => name(w.district) === ADMIN_HOME_PROVINCE || name(w.province) === ADMIN_HOME_PROVINCE) || list[0];
+}
 
 function normalizeUsername(v) {
   return clean(v).toLowerCase().replace(/\s+/g, "");
@@ -562,6 +571,35 @@ async function applyAdminPassword(pool) {
   return true;
 }
 
+async function bindPlatformAdminHome(pool) {
+  const admin = await findPlatformAdmin(pool);
+  if (!admin) return false;
+  const r = await pool.query(
+    `SELECT id, name, sangha_tambon, district, province
+       FROM phra_wats
+      WHERE lower(name) = lower($1)
+      ORDER BY CASE WHEN province = $2 OR district = $2 THEN 0 ELSE 1 END,
+               CASE WHEN sangha_tambon <> '' THEN 0 ELSE 1 END, id
+      LIMIT 1`,
+    [ADMIN_HOME_WAT, ADMIN_HOME_PROVINCE]
+  );
+  const wat = pickAdminHomeWat(r.rows);
+  if (!wat) return false;
+  const province = wat.province || (wat.district === ADMIN_HOME_PROVINCE ? ADMIN_HOME_PROVINCE : wat.district) || ADMIN_HOME_PROVINCE;
+  await pool.query(
+    `UPDATE phra_users
+        SET wat_id = $2,
+            wat_name = $3,
+            sangha_tambon = $4,
+            district = $5,
+            province = $6,
+            updated_at = now()
+      WHERE id = $1`,
+    [admin.id, wat.id, wat.name, wat.sangha_tambon || "", wat.district || "", province]
+  );
+  return true;
+}
+
 async function enrichPublicUser(pool, user) {
   if (!user) return null;
   const out = user;
@@ -942,6 +980,8 @@ module.exports = {
   normalizeEmail,
   isEmail,
   PLATFORM_ADMIN_EMAIL,
+  ADMIN_HOME_WAT,
+  pickAdminHomeWat,
   hashPassword,
   verifyPassword,
   publicUser,
@@ -966,6 +1006,7 @@ module.exports = {
   seedAdmin,
   migratePlatformAdminEmail,
   applyAdminPassword,
+  bindPlatformAdminHome,
   requestPasswordReset,
   resetPasswordWithCode,
   loadSession,
