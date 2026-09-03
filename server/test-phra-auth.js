@@ -129,4 +129,11 @@ eq(homeBodyInScope(watUser, { wat_name: "วัดราชประดิษฐ
 eq(homeBodyInScope(tambonUser, { sangha_tambon: "ท่าวาสุกรี เขต ๒" }), true, "home own tambon");
 eq(homeBodyInScope(admin, { wat_name: "วัดใดก็ได้" }), true, "admin home");
 
+const fs = require("fs");
+const path = require("path");
+const serverSrc = fs.readFileSync(path.join(__dirname, "server.js"), "utf8");
+eq(serverSrc.indexOf("adminNeedsPlacePick") >= 0, true, "admin waits to pick place");
+eq(serverSrc.indexOf("$9 = '' OR COALESCE(NULLIF(pw.province") >= 0, true, "report filters province");
+eq(serverSrc.indexOf("lv === \"wat\" && req.user.watName") >= 0, true, "places catalog scoped to wat");
+
 console.log("ok");

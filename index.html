@@ -727,6 +727,12 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     <select id="yearBe">
       <option value="">ทุกปีจำพรรษา</option>
     </select>
+    <select id="viewProvince" hidden>
+      <option value="">เลือกจังหวัด</option>
+    </select>
+    <select id="viewDistrict" hidden>
+      <option value="">เลือกอำเภอ</option>
+    </select>
     <select id="sanghaTambon">
       <option value="">ทุกตำบลคณะสงฆ์</option>
     </select>
@@ -1630,6 +1636,14 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
         wat.insertAdjacentHTML("beforeend", '<option value="' + esc(me.watName) + '">' + esc(me.watName) + "</option>");
       }
       wat.value = me.watName;
+    }
+    const provSel = $("viewProvince");
+    const distSel = $("viewDistrict");
+    if (provSel) {
+      provSel.hidden = lv !== "admin";
+    }
+    if (distSel) {
+      distSel.hidden = lv !== "admin" && lv !== "province";
     }
     if ($("btn-sangha-add")) $("btn-sangha-add").hidden = lv === "tambon";
     if ($("newSanghaName")) $("newSanghaName").disabled = lv === "tambon";
@@ -5016,11 +5030,13 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
           " · เปรียญธรรม " + (reportMeta.rankCounts["พระเปรียญธรรม"] || 0) : "")
       : (lockBit ? lockBit.replace(/^ · /, "") : "");
     if (!shown.length) {
-      const why = $("statusFilter").value && $("statusFilter").value !== "จำพรรษา"
+      const why = reportMeta && reportMeta.needPlace
+        ? "เลือกจังหวัดแล้วเลือกอำเภอ จึงจะแสดงรายชื่อ — โหลดเฉพาะเขตที่เลือก จะได้ไม่ช้า"
+        : ($("statusFilter").value && $("statusFilter").value !== "จำพรรษา"
         ? "ยังไม่มีรายชื่อสถานะนี้ในชุดที่เลือก — ลองเปลี่ยนสถานะ หรือเลือกทุกสถานะ"
         : ($("rankKind").value
           ? "ยังไม่มีรายชื่อประเภทนี้ในชุดที่เลือก — ลองเปลี่ยนเป็นทุกประเภท"
-          : "ยังไม่มีรายชื่อในปีนี้ หรือไม่ตรงคำค้น — เลือกปีจำพรรษาแล้วกด Ctrl+F5");
+          : "ยังไม่มีรายชื่อในปีนี้ หรือไม่ตรงคำค้น — เลือกปีจำพรรษาแล้วกด Ctrl+F5"));
       list.innerHTML = '<div class="empty">' + why + "</div>";
       return;
     }
@@ -5134,9 +5150,77 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       $("watName").value = wats.indexOf(keep) >= 0 ? keep : "";
     }
   }
+  function viewProvinceValue() {
+    if (!me) return "";
+    if (me.accessLevel === "admin") return ($("viewProvince") && $("viewProvince").value) || "";
+    return me.province || "";
+  }
+  function viewDistrictValue() {
+    if (!me) return "";
+    if (me.accessLevel === "district" || me.accessLevel === "tambon" || me.accessLevel === "wat") {
+      return me.district || "";
+    }
+    return ($("viewDistrict") && $("viewDistrict").value) || "";
+  }
+  function adminWaitingPlace() {
+    return !!(me && me.accessLevel === "admin" && !viewDistrictValue() && !$("sanghaTambon").value && !$("watName").value);
+  }
+  function placeQuery() {
+    const qs = [];
+    if (!me) return qs;
+    if (me.accessLevel === "admin") {
+      const p = viewProvinceValue();
+      const d = viewDistrictValue();
+      if (p) qs.push("province=" + encodeURIComponent(p));
+      if (d) qs.push("district=" + encodeURIComponent(d));
+    } else if (me.accessLevel === "province") {
+      const d = viewDistrictValue();
+      if (d) qs.push("district=" + encodeURIComponent(d));
+    }
+    return qs;
+  }
+  async function fillViewProvinces() {
+    const sel = $("viewProvince");
+    if (!sel || !me || me.accessLevel !== "admin") return;
+    const data = await api("/temples/provinces");
+    const names = (data.provinces || []).map(function (x) { return x && (x.name || x); }).filter(Boolean);
+    const keep = sel.value;
+    sel.innerHTML = '<option value="">เลือกจังหวัด</option>' + names.map(function (p) {
+      return '<option value="' + esc(p) + '">' + esc(p) + "</option>";
+    }).join("");
+    sel.value = names.indexOf(keep) >= 0 ? keep : "";
+  }
+  async function fillViewDistricts() {
+    const sel = $("viewDistrict");
+    if (!sel || !me) return;
+    if (me.accessLevel !== "admin" && me.accessLevel !== "province") return;
+    const prov = viewProvinceValue();
+    const keep = sel.value;
+    if (!prov) {
+      sel.innerHTML = '<option value="">เลือกอำเภอ</option>';
+      return;
+    }
+    const data = await api("/temples/districts?province=" + encodeURIComponent(prov));
+    const names = (data.districts || []).map(function (x) { return x && (x.name || x); }).filter(Boolean);
+    sel.innerHTML = '<option value="">' + (me.accessLevel === "province" ? "ทุกอำเภอในจังหวัด" : "เลือกอำเภอ") + "</option>" +
+      names.map(function (d) {
+        return '<option value="' + esc(d) + '">' + esc(d) + "</option>";
+      }).join("");
+    sel.value = names.indexOf(keep) >= 0 ? keep : "";
+  }
   async function loadPlaces() {
     const year = $("yearBe").value;
-    const data = await api("/places" + (year ? "?yearBe=" + encodeURIComponent(year) : ""));
+    if (adminWaitingPlace()) {
+      places = [];
+      watCatalog = [];
+      $("sanghaTambon").innerHTML = '<option value="">ทุกตำบลคณะสงฆ์</option>';
+      $("watName").innerHTML = '<option value="">ทุกวัด</option>';
+      applyAccessLocks();
+      return;
+    }
+    const qs = placeQuery();
+    if (year) qs.push("yearBe=" + encodeURIComponent(year));
+    const data = await api("/places" + (qs.length ? "?" + qs.join("&") : ""));
     places = data.sanghaTambons || [];
     watCatalog = data.wats || [];
     fillWatCatalog();
@@ -5179,6 +5263,12 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     if (editing) showMainWatPick();
   }
   async function load() {
+    if (adminWaitingPlace()) {
+      reportMeta = { needPlace: true };
+      rows = [];
+      draw();
+      return;
+    }
     const year = $("yearBe").value;
     const q = ($("q").value || "").trim();
     const qs = [];
@@ -5189,6 +5279,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     if ($("watName").value) qs.push("watName=" + encodeURIComponent($("watName").value));
     if ($("rankKind").value) qs.push("rank=" + encodeURIComponent($("rankKind").value));
     if ($("statusFilter") && $("statusFilter").value) qs.push("status=" + encodeURIComponent($("statusFilter").value));
+    placeQuery().forEach(function (bit) { qs.push(bit); });
     const data = await api("/report" + (qs.length ? "?" + qs.join("&") : ""));
     reportMeta = data;
     rows = data.rows || [];
@@ -5216,7 +5307,10 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
   let qTimer = 0;
   $("q").oninput = function () {
     clearTimeout(qTimer);
-    qTimer = setTimeout(function () { load().catch(function (e) { $("list").innerHTML = '<div class="empty">' + e.message + "</div>"; }); }, 250);
+    qTimer = setTimeout(function () {
+      if (adminWaitingPlace()) return;
+      load().catch(function (e) { $("list").innerHTML = '<div class="empty">' + e.message + "</div>"; });
+    }, 250);
   };
     $("yearBe").onchange = function () {
     rainEditYear = 0;
@@ -5232,6 +5326,14 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     load().catch(function (e) { $("list").innerHTML = '<div class="empty">' + e.message + "</div>"; });
   };
   $("watName").onchange = function () { load().catch(function (e) { $("list").innerHTML = '<div class="empty">' + e.message + "</div>"; }); };
+  if ($("viewProvince")) $("viewProvince").onchange = function () {
+    fillViewDistricts().then(function () {
+      return loadPlaces().then(load);
+    }).catch(function (e) { $("list").innerHTML = '<div class="empty">' + e.message + "</div>"; });
+  };
+  if ($("viewDistrict")) $("viewDistrict").onchange = function () {
+    loadPlaces().then(load).catch(function (e) { $("list").innerHTML = '<div class="empty">' + e.message + "</div>"; });
+  };
   $("rankKind").onchange = function () { load().catch(function (e) { $("list").innerHTML = '<div class="empty">' + e.message + "</div>"; }); };
   $("statusFilter").onchange = function () { load().catch(function (e) { $("list").innerHTML = '<div class="empty">' + e.message + "</div>"; }); };
   function rainsCell(v) {
@@ -5985,10 +6087,19 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       fillList("thananukrom-office", d.offices || d.names);
     }).catch(function () {});
     try {
-      await loadPlaces();
-      fillUserDatalists();
-      await load();
-      await fillUserProvinces("");
+      await fillViewProvinces();
+      await fillViewDistricts();
+      applyAccessLocks();
+      if (!adminWaitingPlace()) {
+        await loadPlaces();
+        fillUserDatalists();
+        await load();
+      } else {
+        rows = [];
+        reportMeta = { needPlace: true };
+        draw();
+      }
+      if (me.accessLevel === "admin") await fillUserProvinces("");
     } catch (e) {
       $("list").innerHTML = '<div class="empty">' + (e.message || "เปิดเซิร์ฟเวอร์ไม่สำเร็จ") + "</div>";
     }

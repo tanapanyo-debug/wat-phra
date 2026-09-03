@@ -837,6 +837,23 @@ function clientIp(req) {
   return String((req.headers["x-forwarded-for"] || req.socket.remoteAddress || "")).split(",")[0].trim() || "local";
 }
 
+function reportPlaceOf(user, query) {
+  let province = str(query && query.province, 80);
+  let district = str(query && query.district, 80);
+  const lv = user && user.accessLevel;
+  if (lv === "province" && user.province) province = province || str(user.province, 80);
+  if (lv === "district") {
+    if (user.province) province = str(user.province, 80) || province;
+    if (user.district) district = str(user.district, 80) || district;
+  }
+  return { province, district };
+}
+
+function adminNeedsPlacePick(user, bits) {
+  if (!user || user.accessLevel !== "admin") return false;
+  return !(bits.watName || bits.sanghaTambon || bits.district || bits.province || bits.unmatched);
+}
+
 const app = express();
 app.disable("x-powered-by");
 if (ON_RENDER) app.set("trust proxy", 1);
@@ -1552,7 +1569,9 @@ app.get("/api/report", async (req, res) => {
     const tambon = str(req.query.tambon, 80);
     const sanghaTambon = str(req.query.sanghaTambon, 80);
     const watName = str(req.query.watName, 160);
-    const district = str(req.query.district, 80);
+    const place = reportPlaceOf(req.user, req.query);
+    const district = place.district || str(req.query.district, 80);
+    const province = place.province;
     const unmatched = String(req.query.unmatched || "") === "1";
     const statusWanted = STATUSES.includes(str(req.query.status, 40)) ? str(req.query.status, 40) : "";
     const statusSql = `COALESCE(NULLIF(m.status,''), 'จำพรรษา')`;
@@ -1579,6 +1598,7 @@ app.get("/api/report", async (req, res) => {
            AND ($6 = '' OR COALESCE(NULLIF(y.wat_name,''), m.wat_name) = $6 OR m.wat_name = $6)
            AND ($7 = 0 OR ${sanghaExpr} = '')
            AND ($8 = '' OR ${statusSql} = $8)
+           AND ($9 = '' OR COALESCE(NULLIF(pw.province,''), NULLIF(y.province,''), m.province) = $9)
          ORDER BY ${sanghaExpr}, CASE WHEN COALESCE(m.person_type, 'ภิกษุ') = 'สามเณร' THEN 1 ELSE 0 END, 8, m.chaya, m.id`;
     const allSql = `SELECT m.id, m.person_type, m.chaya, m.title, m.former_name, m.former_surname, m.status,
             m.wat_name,
@@ -1599,9 +1619,18 @@ app.get("/api/report", async (req, res) => {
            AND ($4 = '' OR ${sanghaExprM} = $4)
            AND ($5 = '' OR m.wat_name = $5)
            AND ($6 = '' OR ${statusSql} = $6)
+           AND ($7 = '' OR COALESCE(NULLIF(pw.province,''), m.province) = $7)
          ORDER BY ${sanghaExprM}, CASE WHEN COALESCE(m.person_type, 'ภิกษุ') = 'สามเณร' THEN 1 ELSE 0 END, m.wat_name, m.chaya, m.id`;
-    const yearParams = [q, yearBe, tambon, district, unmatched ? "" : sanghaTambon, watName, unmatched ? 1 : 0, statusWanted];
-    const allParams = [q, tambon, district, sanghaTambon, watName, statusWanted];
+    if (adminNeedsPlacePick(req.user, { watName, sanghaTambon, district, province, unmatched })) {
+      return res.json({
+        yearBe: yearBe || null, total: 0, monks: 0, novices: 0,
+        tambons: [], sanghaTambons: [], wats: [],
+        rankCounts: {}, statusCounts: {}, rainsHeader: {}, yearLock: null,
+        rows: [], needPlace: true
+      });
+    }
+    const yearParams = [q, yearBe, tambon, district, unmatched ? "" : sanghaTambon, watName, unmatched ? 1 : 0, statusWanted, province];
+    const allParams = [q, tambon, district, sanghaTambon, watName, statusWanted, province];
     const r = yearBe
       ? await pool.query(insertBeforeOrderBy(yearSql, appendViewScope(req.user, yearParams, "m")), yearParams)
       : await pool.query(insertBeforeOrderBy(allSql, appendViewScope(req.user, allParams, "m")), allParams);
@@ -1674,7 +1703,7 @@ app.get("/api/report", async (req, res) => {
       sanghaTambon: unmatched ? "" : (sanghaTambon || (req.user && req.user.sanghaTambon) || ""),
       tambon: tambon || sample.tambon || "",
       district: district || (req.user && req.user.district) || sample.district || "",
-      province: (req.user && req.user.province) || sample.province || ""
+      province: province || (req.user && req.user.province) || sample.province || ""
     });
     const yearLock = yearBe
       ? await yearLockStatus(pool, req.user, yearBe, watName, unmatched ? "" : sanghaTambon)
@@ -1692,6 +1721,24 @@ app.get("/api/report", async (req, res) => {
 app.get("/api/places", async (req, res) => {
   try {
     const yearBe = intOrNull(req.query.yearBe, 2400, 2700);
+    const place = reportPlaceOf(req.user, req.query);
+    const lv = req.user && req.user.accessLevel;
+    if (lv === "admin" && !place.province && !place.district) {
+      return res.json({ sanghaTambons: [], wats: [] });
+    }
+    const monkParams = [];
+    let extra = "";
+    if (yearBe) {
+      monkParams.push(yearBe);
+    }
+    if (place.district) {
+      monkParams.push(place.district);
+      extra += " AND COALESCE(NULLIF(pw.district,''), " + (yearBe ? "NULLIF(y.district,''), " : "") + "m.district) = $" + monkParams.length;
+    }
+    if (place.province) {
+      monkParams.push(place.province);
+      extra += " AND COALESCE(NULLIF(pw.province,''), " + (yearBe ? "NULLIF(y.province,''), " : "") + "m.province) = $" + monkParams.length;
+    }
     const r = yearBe
       ? await pool.query(
         `SELECT COALESCE(NULLIF(pw.sangha_tambon,''), NULLIF(y.sangha_tambon,''), m.sangha_tambon) AS sangha_tambon,
@@ -1700,15 +1747,18 @@ app.get("/api/places", async (req, res) => {
            JOIN monk_rains y ON y.monk_id = m.id AND y.year_be = $1
            LEFT JOIN ${WAT_PLACE_SQL} pw ON lower(pw.name) = lower(COALESCE(NULLIF(y.wat_name,''), m.wat_name))
           AND (COALESCE(NULLIF(y.district,''), m.district) = '' OR lower(pw.district) = lower(COALESCE(NULLIF(y.district,''), m.district)))
-          WHERE COALESCE(NULLIF(y.wat_name,''), m.wat_name) <> ''`,
-        [yearBe]
+          WHERE COALESCE(NULLIF(y.wat_name,''), m.wat_name) <> ''` + extra +
+          appendViewScope(req.user, monkParams, "m"),
+        monkParams
       )
       : await pool.query(
         `SELECT COALESCE(NULLIF(pw.sangha_tambon,''), m.sangha_tambon) AS sangha_tambon, m.wat_name
            FROM monks m
            LEFT JOIN ${WAT_PLACE_SQL} pw ON lower(pw.name) = lower(m.wat_name)
           AND (m.district = '' OR lower(pw.district) = lower(m.district))
-          WHERE m.wat_name <> ''`
+          WHERE m.wat_name <> ''` + extra +
+          appendViewScope(req.user, monkParams, "m"),
+        monkParams
       );
     const bySangha = {};
     for (const row of r.rows) {
@@ -1720,14 +1770,35 @@ app.get("/api/places", async (req, res) => {
       name,
       wats: [...bySangha[name]].sort()
     }));
-    const loc = await pool.query(`
-      SELECT name, tambon, sangha_tambon, district, province FROM phra_wats WHERE name <> ''
-      UNION ALL
-      SELECT wat_name, tambon, sangha_tambon, district, province FROM monks WHERE wat_name <> ''
-      UNION ALL
-      SELECT wat_name, tambon, sangha_tambon, district, province FROM monk_rains WHERE wat_name <> ''
-    `);
-    const wats = catalogWatsFromRows(loc.rows);
+    const locParams = [];
+    let locWhere = "WHERE name <> ''";
+    if (place.province) {
+      locParams.push(place.province);
+      locWhere += " AND province = $" + locParams.length;
+    }
+    if (place.district) {
+      locParams.push(place.district);
+      locWhere += " AND district = $" + locParams.length;
+    }
+    if (lv === "tambon" && req.user.sanghaTambon) {
+      locParams.push(req.user.sanghaTambon);
+      locWhere += " AND sangha_tambon = $" + locParams.length;
+    }
+    if (lv === "wat" && req.user.watName) {
+      locParams.push(req.user.watName);
+      locWhere += " AND lower(name) = lower($" + locParams.length + ")";
+    }
+    const loc = await pool.query(
+      "SELECT name, tambon, sangha_tambon, district, province FROM phra_wats " + locWhere,
+      locParams
+    );
+    const wats = catalogWatsFromRows(loc.rows.concat(r.rows.map((row) => ({
+      name: row.wat_name,
+      sangha_tambon: row.sangha_tambon,
+      tambon: "",
+      district: place.district || "",
+      province: place.province || ""
+    }))));
     res.json(scopePlaces(req.user, { sanghaTambons, wats }));
   } catch (e) {
     console.error(e);
@@ -1778,6 +1849,9 @@ app.get("/api/monks", async (req, res) => {
          ORDER BY m.chaya, m.id`;
     const yearParams = [q, yearBe];
     const allParams = [q];
+    if (adminNeedsPlacePick(req.user, reportPlaceOf(req.user, req.query))) {
+      return res.json({ monks: [], needPlace: true });
+    }
     const r = yearBe
       ? await pool.query(insertBeforeOrderBy(yearSql, appendViewScope(req.user, yearParams, "m")), yearParams)
       : await pool.query(insertBeforeOrderBy(allSql, appendViewScope(req.user, allParams, "m")), allParams);
