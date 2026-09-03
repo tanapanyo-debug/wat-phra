@@ -15,7 +15,9 @@ const {
   homeBodyInScope,
   ACCESS_LABEL,
   canManageUsers,
-  canApproveRequested
+  canApproveRequested,
+  isEmail,
+  PLATFORM_ADMIN_EMAIL
 } = require("./lib/phraAuth");
 
 function eq(got, want, label) {
@@ -35,6 +37,9 @@ eq(parseAccessLevel("ผู้ดูแลแพลตฟอร์ม"), "admin"
 eq(ACCESS_LABEL.wat, "วัด", "label wat");
 
 eq(normalizeUsername(" Admin "), "admin", "username");
+eq(isEmail("ra_yut@hotmail.com"), true, "admin email");
+eq(isEmail("admin"), false, "admin not email");
+eq(PLATFORM_ADMIN_EMAIL, "ra_yut@hotmail.com", "platform admin email");
 
 const hashed = hashPassword("secret1");
 eq(verifyPassword("secret1", hashed), true, "hash ok");

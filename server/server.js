@@ -40,7 +40,10 @@ const {
 const {
   ensureAuthSchema,
   seedAdmin,
+  migratePlatformAdminEmail,
   applyAdminPassword,
+  requestPasswordReset,
+  resetPasswordWithCode,
   requireAuth,
   requireAdmin,
   requireUserManager,
@@ -72,6 +75,14 @@ const {
     publicUser,
     loadSession
 } = require("./lib/phraAuth");
+const {
+  isMailConfigured,
+  sendMail,
+  mailErrorMessage,
+  publicMailSettings,
+  saveMailSettings,
+  escapeHtml
+} = require("./lib/mail");
 const express = require("express");
 const { Pool } = require("pg");
 
@@ -836,7 +847,7 @@ app.post("/api/login", async (req, res) => {
     if (!loginAllowed(clientIp(req))) {
       return res.status(429).json({ error: "ลองเข้าสู่ระบบบ่อยเกินไป กรุณารอสักครู่" });
     }
-    const out = await login(pool, req.body && req.body.username, req.body && req.body.password);
+    const out = await login(pool, (req.body && (req.body.email || req.body.username)), req.body && req.body.password);
     setSessionCookie(res, out.token);
     res.json({ user: out.user });
   } catch (e) {
@@ -860,9 +871,58 @@ app.post("/api/register", async (req, res) => {
     setSessionCookie(res, out.token);
     res.json({ user: out.user });
   } catch (e) {
-    if (e && e.code === "23505") return res.status(409).json({ error: "ชื่อผู้ใช้นี้มีแล้ว" });
+    if (e && e.code === "23505") return res.status(409).json({ error: "เมลนี้สมัครแล้ว" });
     const status = e && e.status ? e.status : 500;
     res.status(status).json({ error: e.message || "สมัครไม่สำเร็จ" });
+  }
+});
+const FORGOT_GENERIC = { ok: true, message: "ถ้ามีบัญชีนี้ ระบบส่งรหัส 6 หลักไปเมลแล้ว" };
+app.post("/api/forgot-password", async (req, res) => {
+  try {
+    if (!loginAllowed(clientIp(req))) {
+      return res.status(429).json({ error: "ขอลืมรหัสบ่อยเกินไป กรุณารอสักครู่" });
+    }
+    if (!(await isMailConfigured(pool))) {
+      return res.status(503).json({ error: "ระบบยังส่งเมลไม่ได้ ผู้ดูแลแพลตฟอร์มต้องตั้งค่าส่งเมลก่อน" });
+    }
+    const out = await requestPasswordReset(pool, req.body && (req.body.email || req.body.username));
+    if (out.user && out.code) {
+      const name = out.user.display_name || out.user.username;
+      await sendMail(pool, {
+        to: out.user.username,
+        subject: "รหัสตั้งรหัสผ่านใหม่ — ฐานข้อมูลพระภิกษุ",
+        text: "เรียน " + name + "\n\nรหัส 6 หลักสำหรับตั้งรหัสผ่านใหม่: " + out.code + "\nใช้ได้ 15 นาที\nถ้าไม่ได้ขอไว้ ให้ทิ้งเมลนี้ได้เลย",
+        html:
+          "<p>เรียน " + escapeHtml(name) + "</p>" +
+          "<p>รหัส 6 หลักสำหรับตั้งรหัสผ่านใหม่</p>" +
+          '<p style="font-size:28px;letter-spacing:6px;font-weight:700;">' + escapeHtml(out.code) + "</p>" +
+          "<p>ใช้ได้ 15 นาที ถ้าไม่ได้ขอไว้ ให้ทิ้งเมลนี้ได้เลย</p>"
+      });
+    }
+    res.json(FORGOT_GENERIC);
+  } catch (e) {
+    if (e && e.code === "SMTP_NOT_CONFIGURED") {
+      return res.status(503).json({ error: "ระบบยังส่งเมลไม่ได้ ผู้ดูแลแพลตฟอร์มต้องตั้งค่าส่งเมลก่อน" });
+    }
+    const status = e && e.status ? e.status : 500;
+    res.status(status).json({ error: status >= 500 ? mailErrorMessage(e) : (e.message || "ส่งรหัสไม่สำเร็จ") });
+  }
+});
+app.post("/api/reset-password", async (req, res) => {
+  try {
+    if (!loginAllowed(clientIp(req))) {
+      return res.status(429).json({ error: "ลองตั้งรหัสบ่อยเกินไป กรุณารอสักครู่" });
+    }
+    const out = await resetPasswordWithCode(
+      pool,
+      req.body && (req.body.email || req.body.username),
+      req.body && (req.body.code || req.body.token),
+      req.body && (req.body.newPassword || req.body.password)
+    );
+    res.json({ ok: true, email: out.email, message: "ตั้งรหัสผ่านใหม่แล้ว เข้าสู่ระบบด้วยเมลและรหัสใหม่ได้เลย" });
+  } catch (e) {
+    const status = e && e.status ? e.status : 500;
+    res.status(status).json({ error: e.message || "ตั้งรหัสผ่านใหม่ไม่สำเร็จ" });
   }
 });
 app.use("/api", requireAuth(pool));
@@ -917,7 +977,7 @@ app.post("/api/users", requireAdmin, async (req, res) => {
     );
     res.json({ user: publicUser(r.rows[0]) });
   } catch (e) {
-    if (e && e.code === "23505") return res.status(409).json({ error: "ชื่อผู้ใช้นี้มีแล้ว" });
+    if (e && e.code === "23505") return res.status(409).json({ error: "เมลนี้มีแล้ว" });
     sendErr(res, e, "เพิ่มผู้ใช้ไม่สำเร็จ");
   }
 });
@@ -942,7 +1002,7 @@ app.patch("/api/users/:id", requireAdmin, async (req, res) => {
     );
     res.json({ user: publicUser(r.rows[0]) });
   } catch (e) {
-    if (e && e.code === "23505") return res.status(409).json({ error: "ชื่อผู้ใช้นี้มีแล้ว" });
+    if (e && e.code === "23505") return res.status(409).json({ error: "เมลนี้มีแล้ว" });
     sendErr(res, e, "แก้ผู้ใช้ไม่สำเร็จ");
   }
 });
@@ -977,6 +1037,35 @@ app.post("/api/users/:id/reject", requireUserManager, async (req, res) => {
     res.json({ user });
   } catch (e) {
     sendErr(res, e, "ปฏิเสธไม่สำเร็จ");
+  }
+});
+app.get("/api/mail-settings", requireAdmin, async (req, res) => {
+  try {
+    res.json(await publicMailSettings(pool));
+  } catch (e) {
+    sendErr(res, e, "อ่านตั้งค่าเมลไม่สำเร็จ");
+  }
+});
+app.put("/api/mail-settings", requireAdmin, async (req, res) => {
+  try {
+    res.json(await saveMailSettings(pool, req.body || {}));
+  } catch (e) {
+    sendErr(res, e, "บันทึกตั้งค่าเมลไม่สำเร็จ");
+  }
+});
+app.post("/api/mail-settings/test", requireAdmin, async (req, res) => {
+  try {
+    const to = String((req.body && req.body.to) || req.user.username || "").trim();
+    await sendMail(pool, {
+      to,
+      subject: "ทดสอบส่งเมล — ฐานข้อมูลพระภิกษุ",
+      text: "ถ้าเห็นเมลนี้ แสดงว่าตั้งค่าส่งเมลสำเร็จแล้ว ต่อไปลืมรหัสผ่านจะส่งรหัส 6 หลักมาที่เมลได้",
+      html: "<p>ถ้าเห็นเมลนี้ แสดงว่าตั้งค่าส่งเมลสำเร็จแล้ว</p><p>ต่อไปลืมรหัสผ่านจะส่งรหัส 6 หลักมาที่เมลได้</p>"
+    });
+    res.json({ ok: true, message: "ส่งเมลทดสอบแล้ว" });
+  } catch (e) {
+    const status = e && e.code === "SMTP_NOT_CONFIGURED" ? 503 : 500;
+    res.status(status).json({ error: mailErrorMessage(e) });
   }
 });
 app.get("/api/samanasak", (req, res) => {
@@ -2009,6 +2098,7 @@ app.get("/", (req, res) => {
 async function start() {
   await ensureSchema();
   const seeded = await seedAdmin(pool);
+  await migratePlatformAdminEmail(pool);
   const reset = await applyAdminPassword(pool);
   app.listen(PORT, BIND, () => {
     console.log("Monk database  http://" + (BIND === "127.0.0.1" ? "localhost" : BIND) + ":" + PORT);

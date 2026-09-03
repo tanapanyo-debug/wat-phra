@@ -20,7 +20,7 @@ services:
       - key: TRUST_PROXY
         value: "1"
       - key: PHRA_ADMIN_USER
-        value: "admin"
+        value: "ra_yut@hotmail.com"
       - key: PHRA_ADMIN_PASSWORD
         generateValue: true
       - key: DATABASE_URL

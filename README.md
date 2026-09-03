@@ -34,7 +34,7 @@
 2. บน Render กด **New Blueprint Instance** เลือก repo นี้ หรือสร้าง **Web Service** + **PostgreSQL** ใหม่เอง
 3. Build: `npm install --prefix server` · Start: `node server/server.js` · Health: `/api/health`
 4. ฐานต้องชื่อประมาณ `wat_phra` — ห้ามใช้ Internal Database ของบัญชีวัดหรือตรวจบัญชี
-5. Environment: `DATABASE_URL` จากฐานใหม่ · `TRUST_PROXY=1` · `PHRA_ADMIN_USER=admin` · `PHRA_ADMIN_PASSWORD` ตั้งเองหรือให้ Render สุ่ม แล้วดูค่าใน Environment
-6. Deploy แล้วเข้า `https://wat-phra.onrender.com` (ชื่อจริงตามที่ Render ตั้ง) ล็อกอิน admin ครั้งแรก แล้วเปลี่ยนรหัส
+5. Environment: `DATABASE_URL` จากฐานใหม่ · `TRUST_PROXY=1` · `PHRA_ADMIN_USER=ra_yut@hotmail.com` · `PHRA_ADMIN_PASSWORD` ตั้งเองหรือให้ Render สุ่ม แล้วดูค่าใน Environment
+6. Deploy แล้วเข้า `https://wat-phra.onrender.com` ล็อกอินด้วยเมล `ra_yut@hotmail.com` ครั้งแรก แล้วตั้งค่าส่งเมลที่หน้าผู้ใช้ เพื่อให้ลืมรหัสส่งรหัส 6 หลักไปเมลได้
 
 ข้อมูลในเครื่องพอร์ต 4200 **ไม่ถูกยกขึ้นเน็ตอัตโนมัติ** — อัปขึ้นครั้งแรกเป็นฐานว่าง ต้องกรอกใหม่หรือนำเข้าภายหลัง

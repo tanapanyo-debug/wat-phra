@@ -656,18 +656,34 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       <button type="button" id="tab-signup">สมัครใช้</button>
     </div>
     <form id="login-form">
-      <p>เข้าใช้ตามระดับ วัด · ตำบลคณะสงฆ์ · อำเภอ · จังหวัด · ผู้ดูแลแพลตฟอร์ม</p>
-      <label>ชื่อผู้ใช้</label>
-      <input id="login-user" autocomplete="username" required>
+      <p>เข้าใช้ด้วยเมลที่สมัคร · ระดับ วัด · ตำบลคณะสงฆ์ · อำเภอ · จังหวัด · ผู้ดูแลแพลตฟอร์ม</p>
+      <label>เมล</label>
+      <input id="login-user" type="email" autocomplete="username" required>
       <label>รหัสผ่าน</label>
       <input id="login-pass" type="password" autocomplete="current-password" required>
       <p class="msg" id="login-err"></p>
       <button type="submit" class="btn" style="width:100%;margin-top:8px">เข้าสู่ระบบ</button>
+      <button type="button" class="ghost" id="btn-forgot" style="width:100%;margin-top:8px">ลืมรหัสผ่าน?</button>
+    </form>
+    <form id="forgot-form" hidden>
+      <p>กรอกเมลที่ใช้สมัคร ระบบส่งรหัส 6 หลักไปเมลนั้น แล้วนำรหัสมาตั้งรหัสผ่านใหม่</p>
+      <label>เมล</label>
+      <input id="forgot-email" type="email" autocomplete="username" required>
+      <p class="msg" id="forgot-err"></p>
+      <button type="submit" class="btn" style="width:100%;margin-top:8px">ส่งรหัสไปเมล</button>
+      <div id="reset-box" hidden>
+        <label>รหัส 6 หลักจากเมล</label>
+        <input id="reset-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+        <label>รหัสผ่านใหม่</label>
+        <input id="reset-pass" type="password" maxlength="80" autocomplete="new-password">
+        <button type="button" class="btn" id="btn-reset" style="width:100%;margin-top:8px">ตั้งรหัสใหม่</button>
+      </div>
+      <button type="button" class="ghost" id="btn-back-login" style="width:100%;margin-top:8px">กลับไปเข้าสู่ระบบ</button>
     </form>
     <form id="signup-form" hidden>
-      <p>สมัครระดับวัดก่อน ใช้ได้ทันที · เลือกจังหวัด แล้วอำเภอ แล้ววัด · ตำบลคณะสงฆ์ให้ผู้มีอำนาจจัดทีหลัง · ระดับสูงกว่าต้องรออนุมัติ</p>
-      <label>ชื่อผู้ใช้</label>
-      <input id="signup-user" maxlength="40" autocomplete="username" required>
+      <p>สมัครระดับวัดก่อน ใช้ได้ทันที · ใช้เมลจริง เพราะลืมรหัสจะส่งรหัสไปเมลนี้</p>
+      <label>เมล</label>
+      <input id="signup-user" type="email" maxlength="80" autocomplete="username" required>
       <label>รหัสผ่าน</label>
       <input id="signup-pass" type="password" maxlength="80" autocomplete="new-password" required>
       <label>ชื่อที่แสดง</label>
@@ -834,8 +850,8 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     <div id="user-edit-form">
     <div class="grid2">
       <div>
-        <label>ชื่อผู้ใช้</label>
-        <input id="user-username" maxlength="40" autocomplete="off">
+        <label>เมล</label>
+        <input id="user-username" type="email" maxlength="80" autocomplete="off" placeholder="เช่น ra_yut@hotmail.com">
       </div>
       <div>
         <label>รหัสผ่าน</label>
@@ -887,6 +903,33 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     </div>
     <p class="msg" id="user-err-list"></p>
     <div id="user-list"></div>
+    <div id="mail-settings" hidden>
+      <h3 style="margin:22px 0 8px;font-size:1rem">ส่งเมลลืมรหัสผ่าน</h3>
+      <p class="hint">ตั้งครั้งเดียว ใช้ทั้งระบบ เมื่อผู้ใช้กดลืมรหัส จะส่งรหัส 6 หลักไปเมลที่สมัคร — ใช้จีเมล สร้างรหัสผ่านแอป 16 ตัว ที่บัญชี Google → ความปลอดภัย (ต้องเปิดยืนยันตัวตน 2 ขั้นตอน) ไม่ใช่รหัสเข้าจีเมล</p>
+      <div class="grid2">
+        <div>
+          <label>SMTP โฮสต์</label>
+          <input id="mail-host" value="smtp.gmail.com">
+        </div>
+        <div>
+          <label>พอร์ต</label>
+          <input id="mail-port" value="587">
+        </div>
+        <div>
+          <label>เมลผู้ส่ง</label>
+          <input id="mail-user" type="email" placeholder="เช่น you@gmail.com">
+        </div>
+        <div>
+          <label>รหัสผ่านแอป</label>
+          <input id="mail-pass" type="password" placeholder="เว้นว่างถ้าไม่เปลี่ยน">
+        </div>
+      </div>
+      <div class="bar" style="margin-top:12px">
+        <button type="button" class="btn" id="btn-mail-save">บันทึกตั้งค่าเมล</button>
+        <button type="button" class="ghost" id="btn-mail-test">ส่งเมลทดสอบ</button>
+      </div>
+      <p class="msg" id="mail-err"></p>
+    </div>
     <h3 style="margin:22px 0 8px;font-size:1rem">ปีจำพรรษาที่ปิดแล้ว</h3>
     <p class="hint">ปิดแล้ววัดแก้ไม่ได้ · กดเปิดปีให้แก้เมื่อต้องแก้ต่อ</p>
     <div id="year-lock-list"></div>
@@ -1551,7 +1594,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       headers: { "Content-Type": "application/json" }
     }, opt || {}));
     const data = await res.json().catch(function () { return {}; });
-    if (res.status === 401 && path !== "/login" && path !== "/register" && path.indexOf("/temples/") !== 0) showLogin();
+    if (res.status === 401 && path !== "/login" && path !== "/register" && path !== "/forgot-password" && path !== "/reset-password" && path.indexOf("/temples/") !== 0) showLogin();
     if (!res.ok) throw new Error(data.error || "ไม่สำเร็จ");
     return data;
   }
@@ -1574,13 +1617,15 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     const lv = me.accessLevel;
     $("nav-places").hidden = lv === "wat";
     $("nav-users").hidden = lv !== "admin" && lv !== "province" && lv !== "district";
-    $("whoami").textContent = (me.displayName || me.username) + " · " + (me.accessLabel || "");
+    $("whoami").textContent = (me.displayName || me.email || me.username) + " · " + (me.accessLabel || "");
     $("btn-logout").hidden = false;
     const sangha = $("sanghaTambon");
     const wat = $("watName");
     sangha.disabled = lv === "wat" || lv === "tambon";
     wat.disabled = lv === "wat";
     if ($("user-edit-form")) $("user-edit-form").hidden = lv !== "admin";
+    if ($("mail-settings")) $("mail-settings").hidden = lv !== "admin";
+    if (lv === "admin") loadMailSettings();
     paintLevelRequest();
     if (lv === "tambon" && me.sanghaTambon) {
       if ([].some.call(sangha.options, function (o) { return o.value === me.sanghaTambon; })) {
@@ -5488,7 +5533,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     try {
       const data = await api("/login", {
         method: "POST",
-        body: JSON.stringify({ username: $("login-user").value, password: $("login-pass").value })
+        body: JSON.stringify({ email: $("login-user").value, password: $("login-pass").value })
       });
       $("login-pass").value = "";
       await onLoggedIn(data.user);
@@ -5498,16 +5543,57 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
   };
   function setAuthTab(which) {
     const loginOn = which === "login";
-    $("tab-login").classList.toggle("on", loginOn);
-    $("tab-signup").classList.toggle("on", !loginOn);
+    const signupOn = which === "signup";
+    const forgotOn = which === "forgot";
+    $("tab-login").classList.toggle("on", loginOn || forgotOn);
+    $("tab-signup").classList.toggle("on", signupOn);
     $("login-form").hidden = !loginOn;
-    $("signup-form").hidden = loginOn;
+    $("signup-form").hidden = !signupOn;
+    $("forgot-form").hidden = !forgotOn;
     $("login-err").textContent = "";
     $("signup-err").textContent = "";
-    if (!loginOn) loadSignupPlaces();
+    $("forgot-err").textContent = "";
+    if (signupOn) loadSignupPlaces();
+    if (forgotOn && $("login-user").value) $("forgot-email").value = $("login-user").value;
   }
   $("tab-login").onclick = function () { setAuthTab("login"); };
   $("tab-signup").onclick = function () { setAuthTab("signup"); };
+  $("btn-forgot").onclick = function () { setAuthTab("forgot"); };
+  $("btn-back-login").onclick = function () { setAuthTab("login"); };
+  $("forgot-form").onsubmit = async function (ev) {
+    ev.preventDefault();
+    $("forgot-err").textContent = "";
+    try {
+      const data = await api("/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email: $("forgot-email").value })
+      });
+      $("reset-box").hidden = false;
+      $("forgot-err").textContent = data.message || "ถ้ามีบัญชีนี้ ระบบส่งรหัสไปเมลแล้ว";
+    } catch (e) {
+      $("forgot-err").textContent = e.message || "ส่งรหัสไม่สำเร็จ";
+    }
+  };
+  $("btn-reset").onclick = async function () {
+    $("forgot-err").textContent = "";
+    try {
+      const data = await api("/reset-password", {
+        method: "POST",
+        body: JSON.stringify({
+          email: $("forgot-email").value,
+          code: $("reset-code").value,
+          newPassword: $("reset-pass").value
+        })
+      });
+      $("reset-pass").value = "";
+      $("reset-code").value = "";
+      $("login-user").value = $("forgot-email").value;
+      setAuthTab("login");
+      $("login-err").textContent = data.message || "ตั้งรหัสใหม่แล้ว เข้าสู่ระบบได้";
+    } catch (e) {
+      $("forgot-err").textContent = e.message || "ตั้งรหัสใหม่ไม่สำเร็จ";
+    }
+  };
   async function loadSignupPlaces() {
     const sel = $("signup-province");
     if (sel.getAttribute("data-loaded") === "1") return;
@@ -5547,6 +5633,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
         method: "POST",
         body: JSON.stringify({
           username: $("signup-user").value,
+          email: $("signup-user").value,
           password: $("signup-pass").value,
           displayName: $("signup-display").value,
           province: $("signup-province").value,
@@ -5770,7 +5857,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     }
     const isAdmin = me && me.accessLevel === "admin";
     $("user-list").innerHTML = list.length
-      ? '<table class="rpt"><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ</th><th>ระดับ</th><th>เขต</th><th></th></tr></thead><tbody>' +
+      ? '<table class="rpt"><thead><tr><th>เมล</th><th>ชื่อ</th><th>ระดับ</th><th>เขต</th><th></th></tr></thead><tbody>' +
         list.map(function (u) {
           const zone = u.accessLevel === "wat" ? ((u.province || "") + " · " + (u.district || "") + " · " + (u.watName || ""))
             : u.accessLevel === "tambon" ? (u.sanghaTambon || "")
@@ -5813,6 +5900,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     $("user-err").textContent = "";
     const body = {
       username: $("user-username").value,
+      email: $("user-username").value,
       password: $("user-password").value,
       displayName: $("user-display").value,
       accessLevel: $("user-level").value,
@@ -5831,6 +5919,52 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       await loadUsers();
     } catch (e) {
       $("user-err").textContent = e.message || "บันทึกไม่สำเร็จ";
+    }
+  };
+  async function loadMailSettings() {
+    const box = $("mail-settings");
+    if (!box || !me || me.accessLevel !== "admin") return;
+    try {
+      const d = await api("/mail-settings");
+      $("mail-host").value = d.smtpHost || "smtp.gmail.com";
+      $("mail-port").value = d.smtpPort || 587;
+      $("mail-user").value = d.smtpUser || "";
+      $("mail-pass").value = "";
+      $("mail-pass").placeholder = d.hasPassword ? "มีรหัสแล้ว · เว้นว่างถ้าไม่เปลี่ยน" : "รหัสผ่านแอป 16 ตัว";
+      $("mail-err").textContent = d.configured ? "ส่งเมลได้แล้ว" : "ยังไม่ได้ตั้งค่าส่งเมล";
+    } catch (e) {
+      $("mail-err").textContent = e.message || "อ่านตั้งค่าเมลไม่สำเร็จ";
+    }
+  }
+  if ($("btn-mail-save")) $("btn-mail-save").onclick = async function () {
+    $("mail-err").textContent = "";
+    try {
+      const d = await api("/mail-settings", {
+        method: "PUT",
+        body: JSON.stringify({
+          smtpHost: $("mail-host").value,
+          smtpPort: $("mail-port").value,
+          smtpUser: $("mail-user").value,
+          smtpPass: $("mail-pass").value,
+          mailFrom: $("mail-user").value
+        })
+      });
+      $("mail-pass").value = "";
+      $("mail-err").textContent = d.configured ? "บันทึกแล้ว ส่งเมลได้" : "บันทึกแล้ว แต่ยังส่งเมลไม่ได้ ตรวจเมลและรหัสผ่านแอป";
+    } catch (e) {
+      $("mail-err").textContent = e.message || "บันทึกไม่สำเร็จ";
+    }
+  };
+  if ($("btn-mail-test")) $("btn-mail-test").onclick = async function () {
+    $("mail-err").textContent = "";
+    try {
+      const d = await api("/mail-settings/test", {
+        method: "POST",
+        body: JSON.stringify({ to: $("mail-user").value || (me && (me.email || me.username)) })
+      });
+      $("mail-err").textContent = d.message || "ส่งเมลทดสอบแล้ว";
+    } catch (e) {
+      $("mail-err").textContent = e.message || "ส่งเมลทดสอบไม่สำเร็จ";
     }
   };
   function fillUserDatalists() {

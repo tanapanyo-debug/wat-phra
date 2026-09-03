@@ -32,7 +32,7 @@ function readKey(file, key) {
       "DATABASE_URL=" + dbUrl,
       "BIND_HOST=127.0.0.1",
       "PORT=4200",
-      "PHRA_ADMIN_USER=admin",
+      "PHRA_ADMIN_USER=ra_yut@hotmail.com",
       "# PHRA_ADMIN_PASSWORD=",
       "ACCOUNTING_DATABASE_URL=" + parseUrl(fromAccounting || dbUrl).original.replace("/wat_phra", "/wat_accounting"),
       ""

@@ -33,8 +33,33 @@ function parseAccessLevel(v) {
   return "";
 }
 
+const PLATFORM_ADMIN_EMAIL = "ra_yut@hotmail.com";
+
 function normalizeUsername(v) {
   return clean(v).toLowerCase().replace(/\s+/g, "");
+}
+
+function normalizeEmail(v) {
+  return clean(v).toLowerCase();
+}
+
+function isEmail(v) {
+  const s = normalizeEmail(v);
+  return s.length >= 6 && s.length <= 80 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}
+
+function loginIdentity(v) {
+  return normalizeEmail(v);
+}
+
+function requireAccountEmail(v, required) {
+  const email = normalizeEmail(v);
+  if (!email) {
+    if (required) throw deny(400, "ใส่เมลที่ใช้สมัคร");
+    return "";
+  }
+  if (!isEmail(email)) throw deny(400, "ใส่เมลให้ถูกต้อง เช่น name@example.com");
+  return email;
 }
 
 function hashPassword(plain) {
@@ -66,6 +91,7 @@ function publicUser(row) {
   return {
     id: row.id,
     username: row.username,
+    email: row.username || "",
     displayName: row.display_name || "",
     accessLevel,
     accessLabel: ACCESS_LABEL[accessLevel] || accessLevel,
@@ -442,6 +468,26 @@ async function ensureAuthSchema(pool) {
   await pool.query(`ALTER TABLE phra_users ADD COLUMN IF NOT EXISTS requested_level TEXT NOT NULL DEFAULT ''`);
   await pool.query(`ALTER TABLE phra_users ADD COLUMN IF NOT EXISTS requested_at TIMESTAMPTZ`);
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS phra_password_resets (
+      user_id INTEGER PRIMARY KEY REFERENCES phra_users(id) ON DELETE CASCADE,
+      code_hash TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS phra_mail_settings (
+      id INTEGER PRIMARY KEY,
+      smtp_host TEXT NOT NULL DEFAULT 'smtp.gmail.com',
+      smtp_port INTEGER NOT NULL DEFAULT 587,
+      smtp_user TEXT NOT NULL DEFAULT '',
+      smtp_pass TEXT NOT NULL DEFAULT '',
+      mail_from TEXT NOT NULL DEFAULT ''
+    )
+  `);
+  await pool.query(`INSERT INTO phra_mail_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING`);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS phra_sessions (
       token TEXT PRIMARY KEY,
       user_id INTEGER NOT NULL REFERENCES phra_users(id) ON DELETE CASCADE,
@@ -463,7 +509,8 @@ function randomPassword() {
 async function seedAdmin(pool) {
   const n = await pool.query("SELECT COUNT(*)::int AS n FROM phra_users");
   if (n.rows[0].n > 0) return null;
-  const username = normalizeUsername(process.env.PHRA_ADMIN_USER || "admin") || "admin";
+  const envUser = normalizeEmail(process.env.PHRA_ADMIN_USER || "");
+  const username = isEmail(envUser) ? envUser : PLATFORM_ADMIN_EMAIL;
   let password = String(process.env.PHRA_ADMIN_PASSWORD || "").trim();
   let generated = false;
   if (!password) {
@@ -472,19 +519,46 @@ async function seedAdmin(pool) {
   }
   await pool.query(
     `INSERT INTO phra_users (username, password_hash, display_name, access_level)
-     VALUES ($1, $2, 'ผู้ดูแลระบบ', 'admin')`,
+     VALUES ($1, $2, 'ผู้ดูแลแพลตฟอร์ม', 'admin')`,
     [username, hashPassword(password)]
   );
   return { username, password: generated ? password : null, generated };
 }
 
+async function migratePlatformAdminEmail(pool) {
+  const taken = await pool.query(
+    "SELECT id FROM phra_users WHERE lower(username) = $1",
+    [PLATFORM_ADMIN_EMAIL]
+  );
+  if (taken.rowCount) return taken.rows[0];
+  const r = await pool.query(
+    `UPDATE phra_users SET username = $1, updated_at = now()
+      WHERE access_level = 'admin' AND lower(username) IN ('admin', 'administrator')
+      RETURNING id`,
+    [PLATFORM_ADMIN_EMAIL]
+  );
+  return r.rows[0] || null;
+}
+
+async function findPlatformAdmin(pool) {
+  const envUser = normalizeEmail(process.env.PHRA_ADMIN_USER || "");
+  const names = [...new Set([envUser, PLATFORM_ADMIN_EMAIL, "admin"].filter(Boolean))];
+  const r = await pool.query(
+    `SELECT id, username FROM phra_users
+      WHERE lower(username) = ANY($1::text[])
+      ORDER BY CASE WHEN lower(username) = $2 THEN 0 WHEN lower(username) = $3 THEN 1 ELSE 2 END, id
+      LIMIT 1`,
+    [names, PLATFORM_ADMIN_EMAIL, envUser || PLATFORM_ADMIN_EMAIL]
+  );
+  return r.rows[0] || null;
+}
+
 async function applyAdminPassword(pool) {
-  const username = normalizeUsername(process.env.PHRA_ADMIN_USER || "admin") || "admin";
   const password = String(process.env.PHRA_ADMIN_PASSWORD || "").trim();
   if (!password) return false;
-  const r = await pool.query("SELECT id FROM phra_users WHERE username=$1", [username]);
-  if (!r.rowCount) return false;
-  await pool.query("UPDATE phra_users SET password_hash=$2 WHERE id=$1", [r.rows[0].id, hashPassword(password)]);
+  const row = await findPlatformAdmin(pool);
+  if (!row) return false;
+  await pool.query("UPDATE phra_users SET password_hash=$2, updated_at=now() WHERE id=$1", [row.id, hashPassword(password)]);
   return true;
 }
 
@@ -529,15 +603,91 @@ function loginAllowed(ip) {
 }
 
 async function login(pool, username, password) {
-  const u = normalizeUsername(username);
-  if (!u || !password) throw deny(400, "ใส่ชื่อผู้ใช้และรหัสผ่าน");
-  const r = await pool.query("SELECT * FROM phra_users WHERE username = $1", [u]);
+  const u = loginIdentity(username);
+  if (!u || !password) throw deny(400, "ใส่เมลและรหัสผ่าน");
+  const r = await pool.query(
+    `SELECT * FROM phra_users
+      WHERE lower(username) = $1
+         OR ($1 = 'admin' AND access_level = 'admin' AND lower(username) IN ('admin', $2))
+      ORDER BY CASE WHEN lower(username) = $1 THEN 0 ELSE 1 END, id
+      LIMIT 1`,
+    [u, PLATFORM_ADMIN_EMAIL]
+  );
   const row = r.rows[0];
   if (!row || !verifyPassword(password, row.password_hash)) {
-    throw deny(401, "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+    throw deny(401, "เมลหรือรหัสผ่านไม่ถูกต้อง");
   }
   const token = await createSession(pool, row.id);
   return { token, user: publicUser(row) };
+}
+
+function hashResetCode(code) {
+  return crypto.createHash("sha256").update(String(code || "")).digest("hex");
+}
+
+function makeResetCode() {
+  return String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+}
+
+async function requestPasswordReset(pool, email) {
+  const addr = normalizeEmail(email);
+  if (!isEmail(addr)) throw deny(400, "กรุณากรอกเมล");
+  const r = await pool.query("SELECT id, username, display_name FROM phra_users WHERE lower(username) = $1", [addr]);
+  const user = r.rows[0];
+  if (!user) return { ok: true };
+  const recent = await pool.query(
+    "SELECT 1 FROM phra_password_resets WHERE user_id = $1 AND created_at > now() - interval '60 seconds'",
+    [user.id]
+  );
+  if (recent.rowCount) return { ok: true };
+  const code = makeResetCode();
+  await pool.query(
+    `INSERT INTO phra_password_resets (user_id, code_hash, expires_at, attempts)
+     VALUES ($1, $2, now() + interval '15 minutes', 0)
+     ON CONFLICT (user_id) DO UPDATE
+       SET code_hash = EXCLUDED.code_hash,
+           expires_at = EXCLUDED.expires_at,
+           attempts = 0,
+           created_at = now()`,
+    [user.id, hashResetCode(code)]
+  );
+  return { ok: true, user, code };
+}
+
+async function resetPasswordWithCode(pool, email, code, newPassword) {
+  const addr = normalizeEmail(email);
+  if (!isEmail(addr)) throw deny(400, "กรุณากรอกเมล");
+  const pin = String(code || "").replace(/\s/g, "");
+  if (!/^\d{6}$/.test(pin)) throw deny(400, "ใส่รหัส 6 หลักจากเมล");
+  if (String(newPassword || "").length < 6) throw deny(400, "รหัสผ่านใหม่อย่างน้อย 6 ตัว");
+  const found = await pool.query(
+    `SELECT pr.user_id, pr.code_hash, pr.expires_at, pr.attempts, u.username
+       FROM phra_password_resets pr
+       JOIN phra_users u ON u.id = pr.user_id
+      WHERE lower(u.username) = $1`,
+    [addr]
+  );
+  const row = found.rows[0];
+  if (!row) throw deny(400, "รหัสไม่ถูกต้องหรือหมดอายุแล้ว กรุณาขอรหัสใหม่");
+  if (new Date(row.expires_at).getTime() <= Date.now()) {
+    await pool.query("DELETE FROM phra_password_resets WHERE user_id = $1", [row.user_id]);
+    throw deny(400, "รหัสหมดอายุแล้ว กรุณาขอรหัสใหม่");
+  }
+  if (row.attempts >= 8) {
+    await pool.query("DELETE FROM phra_password_resets WHERE user_id = $1", [row.user_id]);
+    throw deny(400, "ใส่รหัสผิดหลายครั้ง กรุณาขอรหัสใหม่");
+  }
+  if (row.code_hash !== hashResetCode(pin)) {
+    await pool.query("UPDATE phra_password_resets SET attempts = attempts + 1 WHERE user_id = $1", [row.user_id]);
+    throw deny(400, "รหัสไม่ถูกต้อง");
+  }
+  await pool.query(
+    "UPDATE phra_users SET password_hash = $2, updated_at = now() WHERE id = $1",
+    [row.user_id, hashPassword(newPassword)]
+  );
+  await pool.query("DELETE FROM phra_password_resets WHERE user_id = $1", [row.user_id]);
+  await pool.query("DELETE FROM phra_sessions WHERE user_id = $1", [row.user_id]);
+  return { ok: true, email: row.username };
 }
 
 async function fillUserScope(pool, input) {
@@ -583,11 +733,7 @@ async function fillUserScope(pool, input) {
 function readUserBody(body, isCreate) {
   const accessLevel = parseAccessLevel(body && body.accessLevel);
   if (!accessLevel) throw deny(400, "เลือกระดับการใช้งาน");
-  const username = normalizeUsername(body && body.username);
-  if (isCreate && !username) throw deny(400, "ใส่ชื่อผู้ใช้");
-  if (username && !/^[a-z0-9._-]{3,40}$/.test(username)) {
-    throw deny(400, "ชื่อผู้ใช้ใช้ได้เฉพาะ a-z 0-9 . _ - ความยาว 3–40");
-  }
+  const username = requireAccountEmail(body && (body.email || body.username), isCreate);
   const password = String((body && body.password) || "");
   if (isCreate && password.length < 6) throw deny(400, "รหัสผ่านอย่างน้อย 6 ตัว");
   if (!isCreate && password && password.length < 6) throw deny(400, "รหัสผ่านอย่างน้อย 6 ตัว");
@@ -627,6 +773,7 @@ function readUserBody(body, isCreate) {
 
 function isPublicApiPath(path) {
   return path === "/health" || path === "/login" || path === "/register"
+    || path === "/forgot-password" || path === "/reset-password"
     || path === "/temples/provinces" || path === "/temples/districts" || path === "/temples/in-place";
 }
 
@@ -683,13 +830,9 @@ function usersVisibleWhere(user, params) {
 }
 
 async function registerUser(pool, body, wat) {
-  const username = normalizeUsername(body && body.username);
+  const username = requireAccountEmail(body && (body.email || body.username), true);
   const password = String((body && body.password) || "");
   const displayName = clean(body && body.displayName).slice(0, 80);
-  if (!username) throw deny(400, "ใส่ชื่อผู้ใช้");
-  if (!/^[a-z0-9._-]{3,40}$/.test(username)) {
-    throw deny(400, "ชื่อผู้ใช้ใช้ได้เฉพาะ a-z 0-9 . _ - ความยาว 3–40");
-  }
   if (password.length < 6) throw deny(400, "รหัสผ่านอย่างน้อย 6 ตัว");
   if (!wat || !wat.id) throw deny(400, "เลือกจังหวัด อำเภอ และวัด");
   const r = await pool.query(
@@ -758,6 +901,9 @@ module.exports = {
   deny,
   parseAccessLevel,
   normalizeUsername,
+  normalizeEmail,
+  isEmail,
+  PLATFORM_ADMIN_EMAIL,
   hashPassword,
   verifyPassword,
   publicUser,
@@ -780,7 +926,10 @@ module.exports = {
   applyWatUserHome,
   ensureAuthSchema,
   seedAdmin,
+  migratePlatformAdminEmail,
   applyAdminPassword,
+  requestPasswordReset,
+  resetPasswordWithCode,
   loadSession,
   createSession,
   destroySession,
