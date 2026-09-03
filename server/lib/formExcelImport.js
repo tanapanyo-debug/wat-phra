@@ -80,20 +80,27 @@ function tableRows(rows) {
   return list.slice(1);
 }
 
+function watAlias(name) {
+  const s = dash(name);
+  if (/intharam|อินทาราม/i.test(s)) return "วัดอินทาราม";
+  return s;
+}
+
 function parseRains(rows) {
   return tableRows(rows).map(function (r) {
     const yearBe = yearBeOf(r[0]);
-    const watName = dash(r[1]);
+    const watName = watAlias(r[1]);
     const rainKind = rainKindOf(r[8]);
     if (!yearBe) return null;
     if (!watName && !rainKind && !dash(r[2]) && !dash(r[3]) && !dash(r[4]) && !dash(r[5])) return null;
+    const atIntharam = watName === "วัดอินทาราม";
     return {
       yearBe: yearBe,
       watName: watName,
-      tambon: dash(r[2]),
+      tambon: dash(r[2]) || (atIntharam ? "หัวรอ" : ""),
       sanghaTambon: dash(r[3]),
-      district: dash(r[4]),
-      province: dash(r[5]),
+      district: dash(r[4]) || (atIntharam ? "พระนครศรีอยุธยา" : ""),
+      province: dash(r[5]) || (atIntharam ? "พระนครศรีอยุธยา" : ""),
       age: dash(r[6]),
       vassa: dash(r[7]),
       rainKind: rainKind

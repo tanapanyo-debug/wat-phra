@@ -5163,7 +5163,9 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     return ($("viewDistrict") && $("viewDistrict").value) || "";
   }
   function adminWaitingPlace() {
-    return !!(me && me.accessLevel === "admin" && !viewDistrictValue() && !$("sanghaTambon").value && !$("watName").value);
+    if (!(me && me.accessLevel === "admin")) return false;
+    if (($("q") && $("q").value || "").trim()) return false;
+    return !viewDistrictValue() && !$("sanghaTambon").value && !$("watName").value;
   }
   function placeQuery() {
     const qs = [];
@@ -5301,14 +5303,13 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     sel.innerHTML = '<option value="">ทุกปีจำพรรษา</option>' + years.map(function (y) {
       return '<option value="' + y + '">จำพรรษา ' + y + "</option>";
     }).join("");
-    sel.value = keep || "2568";
+    sel.value = keep || String(now);
   }
 
   let qTimer = 0;
   $("q").oninput = function () {
     clearTimeout(qTimer);
     qTimer = setTimeout(function () {
-      if (adminWaitingPlace()) return;
       load().catch(function (e) { $("list").innerHTML = '<div class="empty">' + e.message + "</div>"; });
     }, 250);
   };

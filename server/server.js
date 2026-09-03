@@ -851,6 +851,7 @@ function reportPlaceOf(user, query) {
 
 function adminNeedsPlacePick(user, bits) {
   if (!user || user.accessLevel !== "admin") return false;
+  if (bits.q) return false;
   return !(bits.watName || bits.sanghaTambon || bits.district || bits.province || bits.unmatched);
 }
 
@@ -1621,7 +1622,7 @@ app.get("/api/report", async (req, res) => {
            AND ($6 = '' OR ${statusSql} = $6)
            AND ($7 = '' OR COALESCE(NULLIF(pw.province,''), m.province) = $7)
          ORDER BY ${sanghaExprM}, CASE WHEN COALESCE(m.person_type, 'ภิกษุ') = 'สามเณร' THEN 1 ELSE 0 END, m.wat_name, m.chaya, m.id`;
-    if (adminNeedsPlacePick(req.user, { watName, sanghaTambon, district, province, unmatched })) {
+    if (adminNeedsPlacePick(req.user, { q, watName, sanghaTambon, district, province, unmatched })) {
       return res.json({
         yearBe: yearBe || null, total: 0, monks: 0, novices: 0,
         tambons: [], sanghaTambons: [], wats: [],
@@ -1849,7 +1850,7 @@ app.get("/api/monks", async (req, res) => {
          ORDER BY m.chaya, m.id`;
     const yearParams = [q, yearBe];
     const allParams = [q];
-    if (adminNeedsPlacePick(req.user, reportPlaceOf(req.user, req.query))) {
+    if (adminNeedsPlacePick(req.user, Object.assign({ q: searchQ(req.query.q) }, reportPlaceOf(req.user, req.query)))) {
       return res.json({ monks: [], needPlace: true });
     }
     const r = yearBe
