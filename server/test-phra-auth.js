@@ -142,6 +142,7 @@ const serverSrc = fs.readFileSync(path.join(__dirname, "server.js"), "utf8");
 eq(serverSrc.indexOf("adminNeedsPlacePick") >= 0, true, "admin waits to pick place");
 eq(serverSrc.indexOf("$9 = '' OR COALESCE(NULLIF(pw.province") >= 0, true, "report filters province");
 eq(serverSrc.indexOf("yearPwJoinSql") >= 0, true, "year list joins rain place");
+eq(serverSrc.indexOf("$6 <> '' AND (COALESCE(NULLIF(y.wat_name,''), m.wat_name) = $6") >= 0, true, "wat filter keeps rain guests");
 eq(serverSrc.indexOf("lv === \"wat\" && req.user.watName") >= 0, true, "places catalog scoped to wat");
 
 const { thaiPlaceName, watAlias } = require("./lib/formExcelImport");

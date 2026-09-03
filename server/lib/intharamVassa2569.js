@@ -20,12 +20,13 @@ const MONKS = [
     homeProvince: "Chattogram"
   },
   {
-    formerName: "Ruttom Barua",
+    formerName: "Ruttom",
     formerSurname: "Barua",
-    chayaPali: "progga Nidhi",
+    chayaPali: "Progga Nidhi",
     homeWat: "Chittagong Buddhist monastery nandakanon Chittagong",
     homeDistrict: "Chittagong",
-    homeProvince: "Chittagong"
+    homeProvince: "Chittagong",
+    also: ["ruttom", "nidhi", "nidi", "นีดี"]
   }
 ];
 
@@ -40,6 +41,12 @@ function monkMatchSql(alias) {
     ))
     OR lower(btrim(${m}.chaya_pali)) IN ('suriyananda bhikkhu', 'ananda priya bhikkhu', 'progga nidhi')
     OR lower(btrim(${m}.chaya)) IN ('suriyananda bhikkhu', 'ananda priya bhikkhu', 'progga nidhi')
+    OR lower(btrim(${m}.chaya_pali)) LIKE '%nidhi%'
+    OR lower(btrim(${m}.chaya)) LIKE '%nidhi%'
+    OR lower(btrim(${m}.former_name)) LIKE '%ruttom%'
+    OR lower(btrim(${m}.former_name) || ' ' || btrim(${m}.former_surname)) LIKE '%ruttom%'
+    OR COALESCE(${m}.bio->>'englishName','') ILIKE '%nidhi%'
+    OR ${m}.note ILIKE '%นีดี%'
   )`;
 }
 
@@ -67,44 +74,73 @@ async function lookupIntharam(pool) {
   };
 }
 
+async function findListedMonk(pool, row) {
+  const params = [row.chayaPali, row.formerName, row.formerSurname];
+  const bits = [
+    "lower(btrim(chaya_pali)) = lower($1)",
+    "lower(btrim(chaya)) = lower($1)",
+    "(lower(btrim(former_name)) = lower($2) AND lower(btrim(former_surname)) = lower($3))",
+    "lower(btrim(former_name) || ' ' || btrim(former_surname)) = lower($2 || ' ' || $3)",
+    "lower(btrim(former_name)) = lower($2)",
+    "lower(btrim(former_name)) LIKE lower($2) || '%'"
+  ];
+  (row.also || []).forEach((t) => {
+    params.push("%" + String(t).toLowerCase() + "%");
+    const n = "$" + params.length;
+    bits.push(
+      "lower(btrim(chaya_pali)) LIKE " + n +
+      " OR lower(btrim(chaya)) LIKE " + n +
+      " OR lower(btrim(former_name)) LIKE " + n +
+      " OR lower(COALESCE(bio->>'englishName','')) LIKE " + n +
+      " OR note ILIKE " + n
+    );
+  });
+  const r = await pool.query(
+    "SELECT id FROM monks WHERE (" + bits.join(") OR (") + ") ORDER BY id LIMIT 1",
+    params
+  );
+  return r.rows[0] || null;
+}
+
 async function insertMissingMonks(pool, wat) {
   let added = 0;
   for (const row of MONKS) {
-    const found = await pool.query(
-      `SELECT id FROM monks m
-        WHERE lower(btrim(chaya_pali)) = lower($1)
-           OR lower(btrim(chaya)) = lower($1)
-           OR (lower(btrim(former_name)) = lower($2) AND lower(btrim(former_surname)) = lower($3))
-        LIMIT 1`,
-      [row.chayaPali, row.formerName, row.formerSurname]
-    );
-    if (found.rowCount) continue;
-    const ins = await pool.query(
-      `INSERT INTO monks (
-         person_type, chaya, former_name, former_surname, chaya_pali,
-         wat_name, district, province, stay_wat_id, status, note
-       ) VALUES (
-         'ภิกษุ', $1, $2, $3, $1,
-         $4, $5, $6, $7, 'จำพรรษา', 'พระต่างชาติจำพรรษาที่วัดอินทาราม ปี 2569'
-       ) RETURNING id`,
-      [
-        row.chayaPali, row.formerName, row.formerSurname,
-        row.homeWat, row.homeDistrict, row.homeProvince, wat.id
-      ]
-    );
-    added += 1;
-    const monkId = ins.rows[0].id;
-    await pool.query(
-      `INSERT INTO monk_rains (monk_id, year_be, wat_name, tambon, sangha_tambon, district, province, rain_kind)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'')
-       ON CONFLICT (monk_id, year_be) DO UPDATE SET
-         wat_name = EXCLUDED.wat_name,
-         tambon = EXCLUDED.tambon,
-         sangha_tambon = EXCLUDED.sangha_tambon,
-         district = EXCLUDED.district,
-         province = EXCLUDED.province`,
-      [monkId, YEAR_BE, wat.name, wat.tambon, wat.sanghaTambon, wat.district, wat.province]
-    );
+    try {
+      const found = await findListedMonk(pool, row);
+      let monkId = found && found.id;
+      if (!monkId) {
+        const ins = await pool.query(
+          `INSERT INTO monks (
+             person_type, chaya, former_name, former_surname, chaya_pali,
+             wat_name, district, province, stay_wat_id, status, note, bio
+           ) VALUES (
+             'ภิกษุ', $1, $2, $3, $1,
+             $4, $5, $6, $7, 'จำพรรษา', 'พระต่างชาติจำพรรษาที่วัดอินทาราม ปี 2569',
+             $8::jsonb
+           ) RETURNING id`,
+          [
+            row.chayaPali, row.formerName, row.formerSurname,
+            row.homeWat, row.homeDistrict, row.homeProvince, wat.id,
+            JSON.stringify({ englishName: row.chayaPali, nickname: (row.also || []).indexOf("นีดี") >= 0 ? "นีดี" : "" })
+          ]
+        );
+        added += 1;
+        monkId = ins.rows[0].id;
+      }
+      await pool.query(
+        `INSERT INTO monk_rains (monk_id, year_be, wat_name, tambon, sangha_tambon, district, province, rain_kind)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,'')
+         ON CONFLICT (monk_id, year_be) DO UPDATE SET
+           wat_name = EXCLUDED.wat_name,
+           tambon = EXCLUDED.tambon,
+           sangha_tambon = EXCLUDED.sangha_tambon,
+           district = EXCLUDED.district,
+           province = EXCLUDED.province`,
+        [monkId, YEAR_BE, wat.name, wat.tambon, wat.sanghaTambon, wat.district, wat.province]
+      );
+    } catch (e) {
+      console.error("intharam vassa monk", row.chayaPali, e && e.message);
+    }
   }
   return added;
 }

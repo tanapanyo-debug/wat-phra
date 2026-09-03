@@ -1622,7 +1622,7 @@ app.get("/api/report", async (req, res) => {
          WHERE ($1 = '' OR lower(m.chaya||' '||m.chaya_pali||' '||m.sangha_name||' '||COALESCE(m.bio->>'royalName','')||' '||COALESCE(m.bio::text,'')||' '||m.former_name||' '||m.former_surname||' '||m.title||' '||COALESCE(y.wat_name,'')||' '||m.wat_name||' '||m.citizen_id) LIKE '%'||$1||'%')
            AND ($3 = '' OR COALESCE(NULLIF(pw.tambon,''), NULLIF(y.tambon,''), m.tambon) = $3)
            AND ($4 = '' OR ${stayDistrict} = $4)
-           AND ($5 = '' OR ${sanghaExpr} = $5)
+           AND ($5 = '' OR ${sanghaExpr} = $5 OR ($6 <> '' AND (COALESCE(NULLIF(y.wat_name,''), m.wat_name) = $6 OR m.wat_name = $6)))
            AND ($6 = '' OR COALESCE(NULLIF(y.wat_name,''), m.wat_name) = $6 OR m.wat_name = $6)
            AND ($7 = 0 OR ${sanghaExpr} = '')
            AND ($8 = '' OR ${statusSql} = $8)
