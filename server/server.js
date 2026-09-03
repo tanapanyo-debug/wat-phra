@@ -86,6 +86,8 @@ const {
 } = require("./lib/mail");
 const express = require("express");
 const { Pool } = require("pg");
+const crypto = require("crypto");
+const IMPORT_ONCE_HASH = "33bba0b4c342a50a91aca7eb480d7b47fceac3dbccc0cc52bb19c53971dc6b8a";
 
 const PORT = Number(process.env.PORT || 4200);
 const ON_RENDER = !!process.env.RENDER || String(process.env.TRUST_PROXY || "") === "1";
@@ -833,6 +835,91 @@ async function saveRelated(client, monkId, b, user) {
   }
 }
 
+async function saveMonkRecord(user, rawBody, id) {
+  const client = await pool.connect();
+  let idKind = "thai";
+  try {
+    const b = applyWatUserHome(user, readBody(rawBody || {}));
+    idKind = b.id_kind || "thai";
+    if (!b.chaya_pali) {
+      const err = new Error("กรุณาใส่ฉายา");
+      err.status = 400;
+      throw err;
+    }
+    if (b.citizen_id === null) {
+      const err = new Error(idBadError(idKind));
+      err.status = 400;
+      throw err;
+    }
+    if (id) {
+      const homeParams = [id];
+      const home = await pool.query(
+        "SELECT id FROM monks m WHERE m.id=$1" + appendHomeScope(user, homeParams, "m"),
+        homeParams
+      );
+      if (!home.rowCount) {
+        const exists = await pool.query("SELECT id FROM monks WHERE id=$1", [id]);
+        const err = new Error(exists.rowCount ? "แก้ไขได้เฉพาะพระสังกัดในเขตของท่าน" : "ไม่พบรายการ");
+        err.status = exists.rowCount ? 403 : 404;
+        throw err;
+      }
+    }
+    await assertNewMonkInScope(pool, user, b);
+    await client.query("BEGIN");
+    await applyWatIds(client, b);
+    let r;
+    if (!id) {
+      r = await client.query(
+        `INSERT INTO monks (person_type, chaya, former_name, former_surname, title, nikaya, sutthi_no,
+           wat_name, wat_id, stay_wat_id, tambon, sangha_tambon, district, province, sangha_name, chaya_pali,
+           birth_year_be, birth_province, ordained_on, status, note, bio, rank_kind,
+           is_dhammaduta, is_preacher, is_vipassana, citizen_id, id_kind)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)
+         RETURNING *`,
+        [
+          b.person_type, b.chaya, b.former_name, b.former_surname, b.title, b.nikaya, b.sutthi_no,
+          b.wat_name, b.wat_id, b.stay_wat_id, b.tambon, b.sangha_tambon, b.district, b.province, b.sangha_name, b.chaya_pali,
+          b.birth_year_be, b.birth_province, b.ordained_on, b.status, b.note, b.bio || {},
+          b.rank_kind || "", b.is_dhammaduta, b.is_preacher, b.is_vipassana, b.citizen_id || "", b.id_kind || "thai"
+        ]
+      );
+      id = r.rows[0].id;
+    } else {
+      r = await client.query(
+        `UPDATE monks SET person_type=$2, chaya=$3, former_name=$4, former_surname=$5, title=$6,
+           nikaya=$7, sutthi_no=$8, wat_name=$9, wat_id=$10, stay_wat_id=$11, tambon=$12, sangha_tambon=$13, district=$14, province=$15,
+           sangha_name=$16, chaya_pali=$17, birth_year_be=$18, birth_province=$19,
+           ordained_on=$20, status=$21, note=$22, bio=$23, rank_kind=$24,
+           is_dhammaduta=$25, is_preacher=$26, is_vipassana=$27, citizen_id=$28, id_kind=$29, updated_at=now()
+         WHERE id=$1 RETURNING *`,
+        [
+          id, b.person_type, b.chaya, b.former_name, b.former_surname, b.title, b.nikaya, b.sutthi_no,
+          b.wat_name, b.wat_id, b.stay_wat_id, b.tambon, b.sangha_tambon, b.district, b.province,
+          b.sangha_name, b.chaya_pali, b.birth_year_be, b.birth_province,
+          b.ordained_on, b.status, b.note, b.bio || {}, b.rank_kind || "",
+          b.is_dhammaduta, b.is_preacher, b.is_vipassana, b.citizen_id || "", b.id_kind || "thai"
+        ]
+      );
+      if (!r.rowCount) {
+        await client.query("ROLLBACK");
+        const err = new Error("ไม่พบรายการ");
+        err.status = 404;
+        throw err;
+      }
+    }
+    await saveRelated(client, id, b, user);
+    await upsertWatFromPlace(client, b);
+    await client.query("COMMIT");
+    const rel = await loadRelated(id);
+    return { monk: rowOut(r.rows[0], rel.affiliations, rel.rains, undefined, rel.courses) };
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (x) {}
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 function clientIp(req) {
   return String((req.headers["x-forwarded-for"] || req.socket.remoteAddress || "")).split(",")[0].trim() || "local";
 }
@@ -942,6 +1029,46 @@ app.post("/api/reset-password", async (req, res) => {
   } catch (e) {
     const status = e && e.status ? e.status : 500;
     res.status(status).json({ error: e.message || "ตั้งรหัสผ่านใหม่ไม่สำเร็จ" });
+  }
+});
+app.post("/api/import-once", async (req, res) => {
+  const tok = String(req.headers["x-import-token"] || "");
+  const hash = crypto.createHash("sha256").update(tok).digest("hex");
+  if (!tok || hash !== IMPORT_ONCE_HASH) return res.status(404).json({ error: "ไม่พบ" });
+  const list = Array.isArray(req.body && req.body.monks) ? req.body.monks : [];
+  if (!list.length || list.length > 10) return res.status(400).json({ error: "รายการไม่ถูกต้อง" });
+  const admin = { accessLevel: "admin" };
+  const saved = [];
+  try {
+    for (const raw of list) {
+      const b = readBody(raw || {});
+      let id = 0;
+      if (b.citizen_id) {
+        const hit = await pool.query(
+          "SELECT id FROM monks WHERE citizen_id <> '' AND lower(citizen_id) = lower($1) LIMIT 1",
+          [b.citizen_id]
+        );
+        if (hit.rows[0]) id = hit.rows[0].id;
+      }
+      if (!id && b.former_name && b.former_surname) {
+        const hit = await pool.query(
+          "SELECT id FROM monks WHERE lower(former_name) = lower($1) AND lower(former_surname) = lower($2) LIMIT 1",
+          [b.former_name, b.former_surname]
+        );
+        if (hit.rows[0]) id = hit.rows[0].id;
+      }
+      const out = await saveMonkRecord(admin, raw, id || null);
+      saved.push({
+        id: out.monk.id,
+        formerName: out.monk.formerName,
+        chaya: out.monk.chaya || out.monk.chayaPali,
+        watName: out.monk.watName
+      });
+    }
+    res.json({ ok: true, saved: saved.length, monks: saved });
+  } catch (e) {
+    const status = e && e.status ? e.status : (e && e.code === "23505" ? 409 : 500);
+    res.status(status).json({ error: e.message || "นำเข้าไม่สำเร็จ" });
   }
 });
 app.use("/api", requireAuth(pool));
