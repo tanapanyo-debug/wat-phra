@@ -5012,12 +5012,13 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     const home = filterWat || origin;
     return !!(rainWat && home && normWatPick(rainWat) !== normWatPick(home));
   }
-  function listGroupRank(m) {
+  function listSectionRank(m) {
     const st = (m && m.status) || "จำพรรษา";
-    if (st === "มรณภาพ") return 3;
+    if (st === "ลาสิกขา") return 6;
+    if (st === "มรณภาพ") return 5;
     if (st === "ย้ายวัด") return 4;
-    if (st === "ลาสิกขา") return 5;
-    if (listIsAway(m) || isPendingRain(m.rainKindYear)) return 2;
+    if (listIsAway(m) || isPendingRain(m.rainKindYear)) return 3;
+    if (m && m.personType === "สามเณร") return 2;
     return 1;
   }
   function listVassaRank(m) {
@@ -5030,11 +5031,14 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       const ga = a.sanghaTambon || "";
       const gb = b.sanghaTambon || "";
       if (!$("sanghaTambon").value && !$("watName").value && ga !== gb) return ga < gb ? -1 : 1;
-      const g = listGroupRank(a) - listGroupRank(b);
-      if (g) return g;
-      const oa = listOfficeRank(a);
-      const ob = listOfficeRank(b);
-      if (oa !== ob) return oa - ob;
+      const sa = listSectionRank(a);
+      const sb = listSectionRank(b);
+      if (sa !== sb) return sa - sb;
+      if (sa === 1) {
+        const oa = listOfficeRank(a);
+        const ob = listOfficeRank(b);
+        if (oa !== ob) return oa - ob;
+      }
       const pa = listPersonRank(a);
       const pb = listPersonRank(b);
       if (pa !== pb) return pa - pb;
