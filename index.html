@@ -4971,20 +4971,56 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
   function listPersonRank(m) {
     return m && m.personType === "สามเณร" ? 1 : 0;
   }
+  function listWatOffice(m) {
+    return String((m && m.watPosition) || "").trim();
+  }
+  function listOfficeRank(m) {
+    const t = listWatOffice(m);
+    if (/ผู้ช่วยเจ้าอาวาส/.test(t)) return 3;
+    if (/รองเจ้าอาวาส/.test(t)) return 2;
+    if (/รักษาการเจ้าอาวาส/.test(t)) return 1;
+    if (/เจ้าอาวาส/.test(t)) return 0;
+    return 4;
+  }
+  function listIsAway(m) {
+    if (isAwayRain(m.rainKindYear)) return true;
+    const filterWat = ($("watName") && $("watName").value) || "";
+    const rainWat = m.rainWatYear || "";
+    const origin = m.originWatName || m.affWatName || m.watName || "";
+    const home = filterWat || origin;
+    return !!(rainWat && home && normWatPick(rainWat) !== normWatPick(home));
+  }
+  function listGroupRank(m) {
+    const st = (m && m.status) || "จำพรรษา";
+    if (st === "มรณภาพ") return 3;
+    if (st === "ย้ายวัด") return 4;
+    if (st === "ลาสิกขา") return 5;
+    if (listIsAway(m) || isPendingRain(m.rainKindYear)) return 2;
+    return 1;
+  }
+  function listVassaRank(m) {
+    if (m && m.personType === "สามเณร") return -1;
+    const n = Number(m && m.vassa);
+    return Number.isFinite(n) ? n : -1;
+  }
   function sortReportRows(list) {
     return (list || []).slice().sort(function (a, b) {
       const ga = a.sanghaTambon || "";
       const gb = b.sanghaTambon || "";
-      if (ga !== gb) return ga < gb ? -1 : 1;
+      if (!$("sanghaTambon").value && !$("watName").value && ga !== gb) return ga < gb ? -1 : 1;
+      const g = listGroupRank(a) - listGroupRank(b);
+      if (g) return g;
+      const oa = listOfficeRank(a);
+      const ob = listOfficeRank(b);
+      if (oa !== ob) return oa - ob;
       const pa = listPersonRank(a);
       const pb = listPersonRank(b);
       if (pa !== pb) return pa - pb;
-      const wa = a.watName || "";
-      const wb = b.watName || "";
-      if (wa !== wb) return wa < wb ? -1 : wa > wb ? 1 : 0;
-      const ca = a.chaya || a.displayName || "";
-      const cb = b.chaya || b.displayName || "";
-      if (ca !== cb) return ca < cb ? -1 : ca > cb ? 1 : 0;
+      const va = listVassaRank(b) - listVassaRank(a);
+      if (va) return va;
+      const na = a.displayName || a.chaya || "";
+      const nb = b.displayName || b.chaya || "";
+      if (na !== nb) return na < nb ? -1 : na > nb ? 1 : 0;
       return (a.id || 0) - (b.id || 0);
     });
   }

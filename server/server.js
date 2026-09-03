@@ -1324,6 +1324,12 @@ function reportRow(r, stay, rains, asOf, courses, affiliations) {
       const hit = rainAt(rains, asOf, r.status);
       return hit ? (hit.remark || "") : "";
     }()),
+    watPosition: (function () {
+      const b = r.bio && typeof r.bio === "object" ? r.bio : {};
+      const hist = b.watPosHistory || [];
+      const last = hist[hist.length - 1];
+      return String((last && last.position) || b.watPosition || "").trim();
+    }()),
     birthYearBe: r.birth_year_be || "",
     birthProvince: r.birth_province || "",
     note: r.note || "",
