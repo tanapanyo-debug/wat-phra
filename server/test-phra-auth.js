@@ -141,6 +141,12 @@ const path = require("path");
 const serverSrc = fs.readFileSync(path.join(__dirname, "server.js"), "utf8");
 eq(serverSrc.indexOf("adminNeedsPlacePick") >= 0, true, "admin waits to pick place");
 eq(serverSrc.indexOf("$9 = '' OR COALESCE(NULLIF(pw.province") >= 0, true, "report filters province");
+eq(serverSrc.indexOf("yearPwJoinSql") >= 0, true, "year list joins rain place");
 eq(serverSrc.indexOf("lv === \"wat\" && req.user.watName") >= 0, true, "places catalog scoped to wat");
+
+const { thaiPlaceName, watAlias } = require("./lib/formExcelImport");
+eq(watAlias("Wat Intharam"), "วัดอินทาราม", "alias intharam");
+eq(thaiPlaceName("Ayutthaya"), "พระนครศรีอยุธยา", "alias ayutthaya");
+eq(thaiPlaceName("Wang-noi"), "วังน้อย", "alias wang noi");
 
 console.log("ok");

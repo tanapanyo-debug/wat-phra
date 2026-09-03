@@ -86,6 +86,16 @@ function watAlias(name) {
   return s;
 }
 
+function thaiPlaceName(name) {
+  const s = dash(name);
+  if (!s) return "";
+  if (/^ayutthaya$/i.test(s) || /^phra nakhon si ayutthaya$/i.test(s) || /พระนครศรีอยุธยา/.test(s) || /^อยุธยา$/.test(s)) {
+    return "พระนครศรีอยุธยา";
+  }
+  if (/^wang[\s-]*noi$/i.test(s) || /วังน้อย/.test(s)) return "วังน้อย";
+  return s;
+}
+
 function parseRains(rows) {
   return tableRows(rows).map(function (r) {
     const yearBe = yearBeOf(r[0]);
@@ -94,13 +104,15 @@ function parseRains(rows) {
     if (!yearBe) return null;
     if (!watName && !rainKind && !dash(r[2]) && !dash(r[3]) && !dash(r[4]) && !dash(r[5])) return null;
     const atIntharam = watName === "วัดอินทาราม";
+    const district = thaiPlaceName(r[4]) || (atIntharam ? "พระนครศรีอยุธยา" : "");
+    const province = thaiPlaceName(r[5]) || (atIntharam ? "พระนครศรีอยุธยา" : "");
     return {
       yearBe: yearBe,
       watName: watName,
       tambon: dash(r[2]) || (atIntharam ? "หัวรอ" : ""),
       sanghaTambon: dash(r[3]),
-      district: dash(r[4]) || (atIntharam ? "พระนครศรีอยุธยา" : ""),
-      province: dash(r[5]) || (atIntharam ? "พระนครศรีอยุธยา" : ""),
+      district: district,
+      province: province,
       age: dash(r[6]),
       vassa: dash(r[7]),
       rainKind: rainKind
@@ -378,4 +390,4 @@ function parseFormExcel(buf) {
   return { monk, warnings, filled: filled + monk.rains.length };
 }
 
-module.exports = { parseFormExcel };
+module.exports = { parseFormExcel, thaiPlaceName, watAlias };

@@ -11,6 +11,7 @@ const { currentBe, isNovice, personTypeAt, ordainedYearBe, vassaFor, ageAt, toPa
 const { pickRain, carrySourceSql, RAIN_KIND_PENDING, isPendingRainKind } = require("./lib/rainPick");
 const { buildFormBlankXlsx } = require("./lib/formBlankXlsx");
 const { parseFormExcel } = require("./lib/formExcelImport");
+const { ensureIntharamVassa2569 } = require("./lib/intharamVassa2569");
 const {
   ensureRainYearLockSchema,
   yearLockStatus,
@@ -850,6 +851,30 @@ function reportPlaceOf(user, query) {
   return { province, district };
 }
 
+function rainDistrictSql(alias) {
+  const d = (alias || "y") + ".district";
+  return `CASE WHEN lower(btrim(COALESCE(${d},''))) IN ('ayutthaya','phra nakhon si ayutthaya') THEN 'พระนครศรีอยุธยา' ELSE COALESCE(${d},'') END`;
+}
+
+function rainProvinceSql(alias) {
+  const d = (alias || "y") + ".province";
+  return `CASE WHEN lower(btrim(COALESCE(${d},''))) IN ('ayutthaya','phra nakhon si ayutthaya') THEN 'พระนครศรีอยุธยา' ELSE COALESCE(${d},'') END`;
+}
+
+function yearStayDistrictSql(filterDistrict) {
+  return `COALESCE(NULLIF(${rainDistrictSql("y")},''), NULLIF(${filterDistrict},''), CASE WHEN NULLIF(y.wat_name,'') IS NOT NULL THEN '' ELSE m.district END)`;
+}
+
+function yearStayProvinceSql(filterProvince) {
+  return `COALESCE(NULLIF(${rainProvinceSql("y")},''), NULLIF(${filterProvince},''), CASE WHEN NULLIF(y.wat_name,'') IS NOT NULL THEN '' ELSE m.province END)`;
+}
+
+function yearPwJoinSql(filterDistrict) {
+  const stay = yearStayDistrictSql(filterDistrict);
+  return `LEFT JOIN ${WAT_PLACE_SQL} pw ON lower(pw.name) = lower(COALESCE(NULLIF(y.wat_name,''), m.wat_name))
+          AND (${stay} = '' OR lower(pw.district) = lower(${stay}))`;
+}
+
 function adminNeedsPlacePick(user, bits) {
   if (!user || user.accessLevel !== "admin") return false;
   if (bits.q) return false;
@@ -1577,30 +1602,31 @@ app.get("/api/report", async (req, res) => {
     const unmatched = String(req.query.unmatched || "") === "1";
     const statusWanted = STATUSES.includes(str(req.query.status, 40)) ? str(req.query.status, 40) : "";
     const statusSql = `COALESCE(NULLIF(m.status,''), 'จำพรรษา')`;
-    const sanghaExpr = `COALESCE(NULLIF(pw.sangha_tambon,''), NULLIF(y.sangha_tambon,''), m.sangha_tambon)`;
+    const sanghaExpr = `COALESCE(NULLIF(pw.sangha_tambon,''), NULLIF(y.sangha_tambon,''), CASE WHEN NULLIF(y.wat_name,'') IS NOT NULL THEN '' ELSE m.sangha_tambon END)`;
     const sanghaExprM = `COALESCE(NULLIF(pw.sangha_tambon,''), m.sangha_tambon)`;
+    const stayDistrict = `COALESCE(NULLIF(pw.district,''), ${yearStayDistrictSql("$4")})`;
+    const stayProvince = `COALESCE(NULLIF(pw.province,''), ${yearStayProvinceSql("$9")})`;
     const yearSql = `SELECT m.id, m.person_type, m.chaya, m.title, m.former_name, m.former_surname, m.status,
             COALESCE(NULLIF(y.wat_name,''), m.wat_name) AS wat_name,
             COALESCE(NULLIF(pw.tambon,''), NULLIF(y.tambon,''), m.tambon) AS tambon,
             ${sanghaExpr} AS sangha_tambon,
-            COALESCE(NULLIF(pw.district,''), NULLIF(y.district,''), m.district) AS district,
-            COALESCE(NULLIF(pw.province,''), NULLIF(y.province,''), m.province) AS province,
+            ${stayDistrict} AS district,
+            ${stayProvince} AS province,
             y.age, y.vassa, m.birth_year_be, m.birth_province,
             m.ordained_on, m.note, m.bio, m.sangha_name, m.chaya_pali, m.rank_kind,
             m.is_dhammaduta, m.is_preacher, m.is_vipassana, m.citizen_id, m.id_kind,
             m.wat_name AS aff_wat_name, y.rain_kind
          FROM monks m
          JOIN monk_rains y ON y.monk_id = m.id AND y.year_be = $2
-         LEFT JOIN ${WAT_PLACE_SQL} pw ON lower(pw.name) = lower(COALESCE(NULLIF(y.wat_name,''), m.wat_name))
-          AND (COALESCE(NULLIF(y.district,''), m.district) = '' OR lower(pw.district) = lower(COALESCE(NULLIF(y.district,''), m.district)))
+         ${yearPwJoinSql("$4")}
          WHERE ($1 = '' OR lower(m.chaya||' '||m.chaya_pali||' '||m.sangha_name||' '||COALESCE(m.bio->>'royalName','')||' '||COALESCE(m.bio::text,'')||' '||m.former_name||' '||m.former_surname||' '||m.title||' '||COALESCE(y.wat_name,'')||' '||m.wat_name||' '||m.citizen_id) LIKE '%'||$1||'%')
            AND ($3 = '' OR COALESCE(NULLIF(pw.tambon,''), NULLIF(y.tambon,''), m.tambon) = $3)
-           AND ($4 = '' OR COALESCE(NULLIF(pw.district,''), NULLIF(y.district,''), m.district) = $4)
+           AND ($4 = '' OR ${stayDistrict} = $4)
            AND ($5 = '' OR ${sanghaExpr} = $5)
            AND ($6 = '' OR COALESCE(NULLIF(y.wat_name,''), m.wat_name) = $6 OR m.wat_name = $6)
            AND ($7 = 0 OR ${sanghaExpr} = '')
            AND ($8 = '' OR ${statusSql} = $8)
-           AND ($9 = '' OR COALESCE(NULLIF(pw.province,''), NULLIF(y.province,''), m.province) = $9)
+           AND ($9 = '' OR COALESCE(NULLIF(pw.province,''), ${yearStayProvinceSql("$9")}) = $9)
          ORDER BY ${sanghaExpr}, CASE WHEN COALESCE(m.person_type, 'ภิกษุ') = 'สามเณร' THEN 1 ELSE 0 END, 8, m.chaya, m.id`;
     const allSql = `SELECT m.id, m.person_type, m.chaya, m.title, m.former_name, m.former_surname, m.status,
             m.wat_name,
@@ -1730,25 +1756,28 @@ app.get("/api/places", async (req, res) => {
     }
     const monkParams = [];
     let extra = "";
+    let districtParam = "''";
+    let provinceParam = "''";
     if (yearBe) {
       monkParams.push(yearBe);
     }
     if (place.district) {
       monkParams.push(place.district);
-      extra += " AND COALESCE(NULLIF(pw.district,''), " + (yearBe ? "NULLIF(y.district,''), " : "") + "m.district) = $" + monkParams.length;
+      districtParam = "$" + monkParams.length;
+      extra += " AND COALESCE(NULLIF(pw.district,''), " + (yearBe ? yearStayDistrictSql(districtParam) : "m.district") + ") = $" + monkParams.length;
     }
     if (place.province) {
       monkParams.push(place.province);
-      extra += " AND COALESCE(NULLIF(pw.province,''), " + (yearBe ? "NULLIF(y.province,''), " : "") + "m.province) = $" + monkParams.length;
+      provinceParam = "$" + monkParams.length;
+      extra += " AND COALESCE(NULLIF(pw.province,''), " + (yearBe ? yearStayProvinceSql(provinceParam) : "m.province") + ") = $" + monkParams.length;
     }
     const r = yearBe
       ? await pool.query(
-        `SELECT COALESCE(NULLIF(pw.sangha_tambon,''), NULLIF(y.sangha_tambon,''), m.sangha_tambon) AS sangha_tambon,
+        `SELECT COALESCE(NULLIF(pw.sangha_tambon,''), NULLIF(y.sangha_tambon,''), CASE WHEN NULLIF(y.wat_name,'') IS NOT NULL THEN '' ELSE m.sangha_tambon END) AS sangha_tambon,
                 COALESCE(NULLIF(y.wat_name,''), m.wat_name) AS wat_name
            FROM monks m
            JOIN monk_rains y ON y.monk_id = m.id AND y.year_be = $1
-           LEFT JOIN ${WAT_PLACE_SQL} pw ON lower(pw.name) = lower(COALESCE(NULLIF(y.wat_name,''), m.wat_name))
-          AND (COALESCE(NULLIF(y.district,''), m.district) = '' OR lower(pw.district) = lower(COALESCE(NULLIF(y.district,''), m.district)))
+           ${yearPwJoinSql(districtParam)}
           WHERE COALESCE(NULLIF(y.wat_name,''), m.wat_name) <> ''` + extra +
           appendViewScope(req.user, monkParams, "m"),
         monkParams
@@ -2178,6 +2207,10 @@ async function start() {
   await migratePlatformAdminEmail(pool);
   const reset = await applyAdminPassword(pool);
   const adminHome = await bindPlatformAdminHome(pool);
+  const vassaFix = await ensureIntharamVassa2569(pool).catch((e) => {
+    console.error("intharam vassa 2569", e.message);
+    return null;
+  });
   const mailCopied = await importAccountingMail(pool).catch(() => false);
   app.listen(PORT, BIND, () => {
     console.log("Monk database  http://" + (BIND === "127.0.0.1" ? "localhost" : BIND) + ":" + PORT);
@@ -2190,6 +2223,7 @@ async function start() {
     }
     if (reset) console.log("admin password taken from PHRA_ADMIN_PASSWORD");
     if (adminHome) console.log("platform admin home = Wat Intharam");
+    if (vassaFix && vassaFix.ok) console.log("intharam vassa 2569 ready");
     if (mailCopied) console.log("forgot-password mail copied from accounting SMTP");
   });
 }
