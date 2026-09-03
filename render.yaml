@@ -27,3 +27,14 @@ services:
         fromDatabase:
           name: wat-phra-db
           property: connectionString
+      # คัดค่าชุดเดียวกับ wat-accounting ใน Render Dashboard — ห้ามใส่รหัสผ่านในไฟล์นี้
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false

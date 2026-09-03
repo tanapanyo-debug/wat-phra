@@ -4,19 +4,28 @@ function cleanPass(pass) {
   return String(pass || "").replace(/\s/g, "");
 }
 
-function envSmtpConfig() {
-  const host = String(process.env.SMTP_HOST || "").trim();
-  const user = String(process.env.SMTP_USER || "").trim();
-  const pass = cleanPass(process.env.SMTP_PASS);
+function smtpFromMap(e) {
+  const user = String((e && e.SMTP_USER) || "").trim();
+  const pass = cleanPass(e && e.SMTP_PASS);
   if (!user || !pass) return null;
-  const port = Number(process.env.SMTP_PORT || 587);
+  const port = Number((e && e.SMTP_PORT) || 587) || 587;
   return {
-    host: host || "smtp.gmail.com",
+    host: String((e && e.SMTP_HOST) || "smtp.gmail.com").trim() || "smtp.gmail.com",
     port,
     secure: port === 465,
     auth: { user, pass },
-    from: String(process.env.MAIL_FROM || user).trim()
+    from: String((e && e.MAIL_FROM) || user).trim() || user
   };
+}
+
+function envSmtpConfig() {
+  return smtpFromMap({
+    SMTP_HOST: process.env.SMTP_HOST,
+    SMTP_PORT: process.env.SMTP_PORT,
+    SMTP_USER: process.env.SMTP_USER,
+    SMTP_PASS: process.env.SMTP_PASS,
+    MAIL_FROM: process.env.MAIL_FROM
+  });
 }
 
 async function dbSmtpConfig(pool) {
@@ -27,17 +36,13 @@ async function dbSmtpConfig(pool) {
     );
     const row = r.rows[0];
     if (!row) return null;
-    const user = String(row.smtp_user || "").trim();
-    const pass = cleanPass(row.smtp_pass);
-    if (!user || !pass) return null;
-    const port = Number(row.smtp_port || 587);
-    return {
-      host: String(row.smtp_host || "smtp.gmail.com").trim() || "smtp.gmail.com",
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-      from: String(row.mail_from || user).trim() || user
-    };
+    return smtpFromMap({
+      SMTP_HOST: row.smtp_host,
+      SMTP_PORT: row.smtp_port,
+      SMTP_USER: row.smtp_user,
+      SMTP_PASS: row.smtp_pass,
+      MAIL_FROM: row.mail_from
+    });
   } catch (e) {
     return null;
   }
@@ -45,6 +50,23 @@ async function dbSmtpConfig(pool) {
 
 async function smtpConfig(pool) {
   return envSmtpConfig() || (await dbSmtpConfig(pool));
+}
+
+async function importAccountingMail(pool) {
+  const cfg = envSmtpConfig();
+  if (!cfg || !pool) return false;
+  await pool.query(
+    `INSERT INTO phra_mail_settings (id, smtp_host, smtp_port, smtp_user, smtp_pass, mail_from)
+     VALUES (1, $1, $2, $3, $4, $5)
+     ON CONFLICT (id) DO UPDATE SET
+       smtp_host = EXCLUDED.smtp_host,
+       smtp_port = EXCLUDED.smtp_port,
+       smtp_user = EXCLUDED.smtp_user,
+       smtp_pass = EXCLUDED.smtp_pass,
+       mail_from = EXCLUDED.mail_from`,
+    [cfg.host, cfg.port, cfg.auth.user, cfg.auth.pass, cfg.from]
+  );
+  return true;
 }
 
 async function isMailConfigured(pool) {
@@ -158,5 +180,6 @@ module.exports = {
   mailErrorMessage,
   publicMailSettings,
   saveMailSettings,
-  escapeHtml
+  escapeHtml,
+  importAccountingMail
 };
