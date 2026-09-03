@@ -562,6 +562,44 @@ async function applyAdminPassword(pool) {
   return true;
 }
 
+async function enrichPublicUser(pool, user) {
+  if (!user) return null;
+  const out = user;
+  if ((out.watId || out.watName) && (!out.sanghaTambon || !out.district || !out.province || !out.watName)) {
+    const wat = await lookupWat(pool, out.watId, out.watName);
+    if (wat) {
+      if (!out.watId) out.watId = wat.id;
+      if (!out.watName) out.watName = wat.name || "";
+      if (!out.sanghaTambon) out.sanghaTambon = wat.sangha_tambon || "";
+      if (!out.district) out.district = wat.district || "";
+      if (!out.province) out.province = wat.province || "";
+    }
+  }
+  if (out.sanghaTambon && (!out.district || !out.province)) {
+    const r = await pool.query(
+      `SELECT name, district, province FROM phra_sangha_tambons
+        WHERE lower(name) = lower($1)
+        ORDER BY id LIMIT 1`,
+      [out.sanghaTambon]
+    );
+    if (r.rows[0]) {
+      out.sanghaTambon = r.rows[0].name;
+      if (!out.district) out.district = r.rows[0].district || "";
+      if (!out.province) out.province = r.rows[0].province || "";
+    }
+  }
+  if (out.district && !out.province) {
+    const r = await pool.query(
+      `SELECT province FROM phra_wats
+        WHERE lower(district) = lower($1) AND province <> ''
+        ORDER BY id LIMIT 1`,
+      [out.district]
+    );
+    if (r.rows[0]) out.province = r.rows[0].province || "";
+  }
+  return out;
+}
+
 async function loadSession(pool, req) {
   const token = parseCookies(req)[COOKIE];
   if (!token) return null;
@@ -571,7 +609,7 @@ async function loadSession(pool, req) {
       WHERE s.token = $1 AND s.expires_at > now()`,
     [token]
   );
-  return publicUser(r.rows[0]);
+  return enrichPublicUser(pool, publicUser(r.rows[0]));
 }
 
 async function createSession(pool, userId) {
@@ -618,7 +656,7 @@ async function login(pool, username, password) {
     throw deny(401, "เมลหรือรหัสผ่านไม่ถูกต้อง");
   }
   const token = await createSession(pool, row.id);
-  return { token, user: publicUser(row) };
+  return { token, user: await enrichPublicUser(pool, publicUser(row)) };
 }
 
 function hashResetCode(code) {
@@ -841,7 +879,7 @@ async function registerUser(pool, body, wat) {
     [username, hashPassword(password), displayName, wat.id, wat.name || "", wat.district || "", wat.province || ""]
   );
   const token = await createSession(pool, r.rows[0].id);
-  return { token, user: publicUser(r.rows[0]) };
+  return { token, user: await enrichPublicUser(pool, publicUser(r.rows[0])) };
 }
 
 async function requestLevel(pool, user, wanted) {

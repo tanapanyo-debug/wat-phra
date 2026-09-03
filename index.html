@@ -1599,8 +1599,10 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
 
   let me = null;
   let editingUser = null;
+  let applyAccountPlace = true;
   function showLogin() {
     me = null;
+    applyAccountPlace = true;
     document.body.classList.add("need-login");
     document.body.classList.remove("places-on");
     $("page-login").hidden = false;
@@ -1626,7 +1628,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     if ($("mail-settings")) $("mail-settings").hidden = lv !== "admin";
     if (lv === "admin") loadMailSettings();
     paintLevelRequest();
-    if (lv === "tambon" && me.sanghaTambon) {
+    if ((lv === "tambon" || lv === "wat") && me.sanghaTambon) {
       if ([].some.call(sangha.options, function (o) { return o.value === me.sanghaTambon; })) {
         sangha.value = me.sanghaTambon;
       }
@@ -1639,12 +1641,8 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     }
     const provSel = $("viewProvince");
     const distSel = $("viewDistrict");
-    if (provSel) {
-      provSel.hidden = lv !== "admin";
-    }
-    if (distSel) {
-      distSel.hidden = lv !== "admin" && lv !== "province";
-    }
+    if (provSel) provSel.disabled = lv !== "admin";
+    if (distSel) distSel.disabled = lv !== "admin" && lv !== "province";
     if ($("btn-sangha-add")) $("btn-sangha-add").hidden = lv === "tambon";
     if ($("newSanghaName")) $("newSanghaName").disabled = lv === "tambon";
   }
@@ -5130,6 +5128,11 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
 
   let reportMeta = {};
   let places = [];
+  function pickFilterValue(keep, home, names) {
+    if (keep && names.indexOf(keep) >= 0) return keep;
+    if (applyAccountPlace && home && names.indexOf(home) >= 0) return home;
+    return "";
+  }
   function fillWatOptions() {
     const sangha = $("sanghaTambon").value;
     const keep = $("watName").value;
@@ -5147,7 +5150,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       $("watName").innerHTML = '<option value="">ทุกวัด</option>' + wats.map(function (w) {
         return '<option value="' + esc(w) + '">' + esc(w) + "</option>";
       }).join("");
-      $("watName").value = wats.indexOf(keep) >= 0 ? keep : "";
+      $("watName").value = pickFilterValue(keep, me && me.watName, wats);
     }
   }
   function viewProvinceValue() {
@@ -5183,23 +5186,48 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
   }
   async function fillViewProvinces() {
     const sel = $("viewProvince");
-    if (!sel || !me || me.accessLevel !== "admin") return;
+    if (!sel || !me) return;
+    const home = (me.province || "").trim();
+    if (me.accessLevel !== "admin") {
+      sel.innerHTML = home
+        ? '<option value="' + esc(home) + '">' + esc(home) + "</option>"
+        : '<option value="">เลือกจังหวัด</option>';
+      sel.value = home;
+      sel.hidden = !home;
+      sel.disabled = true;
+      return;
+    }
+    sel.hidden = false;
+    sel.disabled = false;
     const data = await api("/temples/provinces");
     const names = (data.provinces || []).map(function (x) { return x && (x.name || x); }).filter(Boolean);
     const keep = sel.value;
     sel.innerHTML = '<option value="">เลือกจังหวัด</option>' + names.map(function (p) {
       return '<option value="' + esc(p) + '">' + esc(p) + "</option>";
     }).join("");
-    sel.value = names.indexOf(keep) >= 0 ? keep : "";
+    sel.value = pickFilterValue(keep, home, names);
   }
   async function fillViewDistricts() {
     const sel = $("viewDistrict");
     if (!sel || !me) return;
-    if (me.accessLevel !== "admin" && me.accessLevel !== "province") return;
+    const home = (me.district || "").trim();
+    const canPick = me.accessLevel === "admin" || me.accessLevel === "province";
+    if (!canPick) {
+      sel.innerHTML = home
+        ? '<option value="' + esc(home) + '">' + esc(home) + "</option>"
+        : '<option value="">เลือกอำเภอ</option>';
+      sel.value = home;
+      sel.hidden = !home;
+      sel.disabled = true;
+      return;
+    }
+    sel.hidden = false;
+    sel.disabled = false;
     const prov = viewProvinceValue();
     const keep = sel.value;
     if (!prov) {
       sel.innerHTML = '<option value="">เลือกอำเภอ</option>';
+      sel.value = "";
       return;
     }
     const data = await api("/temples/districts?province=" + encodeURIComponent(prov));
@@ -5208,7 +5236,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       names.map(function (d) {
         return '<option value="' + esc(d) + '">' + esc(d) + "</option>";
       }).join("");
-    sel.value = names.indexOf(keep) >= 0 ? keep : "";
+    sel.value = pickFilterValue(keep, home, names);
   }
   async function loadPlaces() {
     const year = $("yearBe").value;
@@ -5228,12 +5256,14 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     fillWatCatalog();
     if (editing) showMainWatPick();
     const keep = $("sanghaTambon").value;
+    const names = places.map(function (g) { return g.name; });
     $("sanghaTambon").innerHTML = '<option value="">ทุกตำบลคณะสงฆ์</option>' + places.map(function (g) {
       return '<option value="' + esc(g.name) + '">' + esc(g.name) + "</option>";
     }).join("");
-    $("sanghaTambon").value = places.some(function (g) { return g.name === keep; }) ? keep : "";
+    $("sanghaTambon").value = pickFilterValue(keep, me && me.sanghaTambon, names);
     fillWatOptions();
     applyAccessLocks();
+    applyAccountPlace = false;
   }
   function mergeWatCatalog(extra) {
     const list = watCatalog.concat(extra || []);
@@ -6070,6 +6100,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
   }
   async function onLoggedIn(user) {
     me = user;
+    applyAccountPlace = true;
     hideLogin();
     applyAccessLocks();
     fillYearOptions();
