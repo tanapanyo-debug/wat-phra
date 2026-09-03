@@ -26,7 +26,7 @@ const MONKS = [
     homeWat: "Chittagong Buddhist monastery nandakanon Chittagong",
     homeDistrict: "Chittagong",
     homeProvince: "Chittagong",
-    also: ["ruttom", "nidhi", "nidi", "นีดี"]
+    also: ["ruttom", "nidhi", "นีดี"]
   }
 ];
 
@@ -145,9 +145,68 @@ async function insertMissingMonks(pool, wat) {
   return added;
 }
 
+async function upsertNidhi2569(pool, wat) {
+  const found = await pool.query(
+    `SELECT id FROM monks
+      WHERE lower(chaya_pali) LIKE '%nidhi%'
+         OR lower(chaya) LIKE '%nidhi%'
+         OR lower(former_name) LIKE '%ruttom%'
+         OR lower(former_name || ' ' || former_surname) LIKE '%ruttom%'
+      ORDER BY id LIMIT 1`
+  );
+  let id = found.rows[0] && found.rows[0].id;
+  if (!id) {
+    const ins = await pool.query(
+      `INSERT INTO monks (
+         person_type, chaya, former_name, former_surname, chaya_pali,
+         wat_name, district, province, stay_wat_id, status, note
+       ) VALUES (
+         'ภิกษุ', 'Progga Nidhi', 'Ruttom', 'Barua', 'Progga Nidhi',
+         $1, $2, $3, $4, 'จำพรรษา', 'นีดี'
+       ) RETURNING id`,
+      [
+        "Chittagong Buddhist monastery nandakanon Chittagong",
+        "Chittagong",
+        "Chittagong",
+        wat.id
+      ]
+    );
+    id = ins.rows[0].id;
+  } else {
+    await pool.query(
+      `UPDATE monks
+          SET status = 'จำพรรษา',
+              stay_wat_id = $2,
+              updated_at = now()
+        WHERE id = $1`,
+      [id, wat.id]
+    );
+  }
+  const rainUp = await pool.query(
+    `UPDATE monk_rains
+        SET wat_name = $3,
+            tambon = $4,
+            sangha_tambon = $5,
+            district = $6,
+            province = $7
+      WHERE monk_id = $1 AND year_be = $2`,
+    [id, YEAR_BE, wat.name, wat.tambon || "หัวรอ", wat.sanghaTambon, wat.district, wat.province]
+  );
+  if (!rainUp.rowCount) {
+    await pool.query(
+      `INSERT INTO monk_rains (
+         monk_id, year_be, wat_name, tambon, sangha_tambon, district, province, age, vassa, rain_kind
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, 20, 1, '')`,
+      [id, YEAR_BE, wat.name, wat.tambon || "หัวรอ", wat.sanghaTambon, wat.district, wat.province]
+    );
+  }
+  return id;
+}
+
 async function ensureIntharamVassa2569(pool) {
   const wat = await lookupIntharam(pool);
-  if (!wat) return { ok: false, updated: 0, added: 0 };
+  if (!wat) return { ok: false, updated: 0, added: 0, nidhi: false };
+  const nidhiId = await upsertNidhi2569(pool, wat);
   const added = await insertMissingMonks(pool, wat);
   const named = await pool.query(
     `INSERT INTO monk_rains (monk_id, year_be, wat_name, tambon, sangha_tambon, district, province, rain_kind)
@@ -189,7 +248,8 @@ async function ensureIntharamVassa2569(pool) {
   return {
     ok: true,
     updated: (named.rowCount || 0) + (place.rowCount || 0),
-    added
+    added,
+    nidhi: !!nidhiId
   };
 }
 

@@ -886,7 +886,21 @@ app.disable("x-powered-by");
 if (ON_RENDER) app.set("trust proxy", 1);
 app.use(express.json({ limit: "4mb" }));
 
-app.get("/api/health", (req, res) => res.json({ ok: true, app: "wat-phra" }));
+app.get("/api/health", async (req, res) => {
+  let nidhi2569 = false;
+  try {
+    const r = await pool.query(
+      `SELECT 1
+         FROM monks m
+         JOIN monk_rains y ON y.monk_id = m.id AND y.year_be = 2569
+        WHERE (lower(m.chaya_pali) LIKE '%nidhi%' OR lower(m.chaya) LIKE '%nidhi%' OR lower(m.former_name) LIKE '%ruttom%')
+          AND (y.wat_name ILIKE '%อินทาราม%' OR y.wat_name ILIKE '%intharam%')
+        LIMIT 1`
+    );
+    nidhi2569 = r.rowCount > 0;
+  } catch (e) {}
+  res.json({ ok: true, app: "wat-phra", nidhi2569: nidhi2569 });
+});
 app.post("/api/login", async (req, res) => {
   try {
     if (!loginAllowed(clientIp(req))) {
@@ -1622,8 +1636,12 @@ app.get("/api/report", async (req, res) => {
          WHERE ($1 = '' OR lower(m.chaya||' '||m.chaya_pali||' '||m.sangha_name||' '||COALESCE(m.bio->>'royalName','')||' '||COALESCE(m.bio::text,'')||' '||m.former_name||' '||m.former_surname||' '||m.title||' '||COALESCE(y.wat_name,'')||' '||m.wat_name||' '||m.citizen_id) LIKE '%'||$1||'%')
            AND ($3 = '' OR COALESCE(NULLIF(pw.tambon,''), NULLIF(y.tambon,''), m.tambon) = $3)
            AND ($4 = '' OR ${stayDistrict} = $4)
-           AND ($5 = '' OR ${sanghaExpr} = $5 OR ($6 <> '' AND (COALESCE(NULLIF(y.wat_name,''), m.wat_name) = $6 OR m.wat_name = $6)))
-           AND ($6 = '' OR COALESCE(NULLIF(y.wat_name,''), m.wat_name) = $6 OR m.wat_name = $6)
+           AND ($5 = '' OR ${sanghaExpr} = $5 OR ($6 <> '' AND (COALESCE(NULLIF(y.wat_name,''), m.wat_name) = $6 OR m.wat_name = $6 OR ($6 ILIKE '%อินทาราม%' AND (COALESCE(NULLIF(y.wat_name,''), m.wat_name) ILIKE '%อินทาราม%' OR COALESCE(NULLIF(y.wat_name,''), m.wat_name) ILIKE '%intharam%')))))
+           AND ($6 = '' OR COALESCE(NULLIF(y.wat_name,''), m.wat_name) = $6 OR m.wat_name = $6
+                OR ($6 ILIKE '%อินทาราม%' AND (
+                  COALESCE(NULLIF(y.wat_name,''), m.wat_name) ILIKE '%อินทาราม%'
+                  OR COALESCE(NULLIF(y.wat_name,''), m.wat_name) ILIKE '%intharam%'
+                )))
            AND ($7 = 0 OR ${sanghaExpr} = '')
            AND ($8 = '' OR ${statusSql} = $8)
            AND ($9 = '' OR COALESCE(NULLIF(pw.province,''), ${yearStayProvinceSql("$9")}) = $9)
@@ -2204,13 +2222,13 @@ app.get("/", (req, res) => {
 async function start() {
   await ensureSchema();
   const seeded = await seedAdmin(pool);
-  await migratePlatformAdminEmail(pool);
-  const reset = await applyAdminPassword(pool);
-  const adminHome = await bindPlatformAdminHome(pool);
   const vassaFix = await ensureIntharamVassa2569(pool).catch((e) => {
     console.error("intharam vassa 2569", e.message);
     return null;
   });
+  await migratePlatformAdminEmail(pool);
+  const reset = await applyAdminPassword(pool);
+  const adminHome = await bindPlatformAdminHome(pool);
   const mailCopied = await importAccountingMail(pool).catch(() => false);
   app.listen(PORT, BIND, () => {
     console.log("Monk database  http://" + (BIND === "127.0.0.1" ? "localhost" : BIND) + ":" + PORT);
@@ -2223,7 +2241,7 @@ async function start() {
     }
     if (reset) console.log("admin password taken from PHRA_ADMIN_PASSWORD");
     if (adminHome) console.log("platform admin home = Wat Intharam");
-    if (vassaFix && vassaFix.ok) console.log("intharam vassa 2569 ready");
+    if (vassaFix && vassaFix.ok) console.log("intharam vassa 2569 ready nidhi=" + !!vassaFix.nidhi);
     if (mailCopied) console.log("forgot-password mail copied from accounting SMTP");
   });
 }
