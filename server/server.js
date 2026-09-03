@@ -1326,9 +1326,19 @@ function reportRow(r, stay, rains, asOf, courses, affiliations) {
     }()),
     watPosition: (function () {
       const b = r.bio && typeof r.bio === "object" ? r.bio : {};
-      const hist = b.watPosHistory || [];
+      const hist = Array.isArray(b.watPosHistory) ? b.watPosHistory : [];
       const last = hist[hist.length - 1];
       return String((last && last.position) || b.watPosition || "").trim();
+    }()),
+    watPosHistory: (function () {
+      const b = r.bio && typeof r.bio === "object" ? r.bio : {};
+      const hist = Array.isArray(b.watPosHistory) ? b.watPosHistory : [];
+      return hist.map(function (a) {
+        return {
+          position: String((a && a.position) || "").trim(),
+          watName: String((a && a.watName) || "").trim()
+        };
+      }).filter(function (a) { return a.position; });
     }()),
     birthYearBe: r.birth_year_be || "",
     birthProvince: r.birth_province || "",

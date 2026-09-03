@@ -4974,13 +4974,35 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
   function listWatOffice(m) {
     return String((m && m.watPosition) || "").trim();
   }
-  function listOfficeRank(m) {
-    const t = listWatOffice(m);
-    if (/ผู้ช่วยเจ้าอาวาส/.test(t)) return 3;
-    if (/รองเจ้าอาวาส/.test(t)) return 2;
-    if (/รักษาการเจ้าอาวาส/.test(t)) return 1;
-    if (/เจ้าอาวาส/.test(t)) return 0;
+  function officeRankFromText(t) {
+    const s = String(t || "");
+    if (/ผู้ช่วยเจ้าอาวาส|ผจร|ผจล/.test(s)) return 3;
+    if (/รองเจ้าอาวาส|รจร|รจล/.test(s)) return 2;
+    if (/รักษาการเจ้าอาวาส/.test(s) || /(^|[^ก-ฮ])รก\./.test(s)) return 1;
+    if (/เจ้าอาวาส/.test(s) || /(^|[^ก-ฮ])จร\./.test(s) || /(^|[^ก-ฮ])จล\./.test(s)) return 0;
     return 4;
+  }
+  function listOfficeRank(m) {
+    let best = 4;
+    function consider(t) {
+      const r = officeRankFromText(t);
+      if (r < best) best = r;
+    }
+    const filterWat = ($("watName") && $("watName").value) || "";
+    const home = filterWat || (m && m.watName) || "";
+    ((m && m.watPosHistory) || []).forEach(function (a) {
+      const wat = String((a && a.watName) || "").trim();
+      if (home && wat && normWatPick(wat) !== normWatPick(home)) return;
+      consider(a.position);
+    });
+    consider(listWatOffice(m));
+    consider(m && m.title);
+    consider(m && m.note);
+    consider(m && m.eduRemark);
+    consider(m && m.sanghaName);
+    consider(m && m.rainRemarkYear);
+    if (m && m.rainsForm && m.rainsForm.remark) consider(m.rainsForm.remark);
+    return best;
   }
   function listIsAway(m) {
     if (isAwayRain(m.rainKindYear)) return true;
