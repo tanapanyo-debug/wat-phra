@@ -454,16 +454,8 @@ body.places-on #btn-logout {
   padding: 22px 20px 20px;
   box-shadow: 0 12px 32px rgba(36,48,56,.08);
 }
-.login-tabs { display: flex; gap: 6px; margin: 0 0 12px; }
-.login-tabs button {
-  flex: 1;
-  border: 1px solid var(--line);
-  background: #fff;
-  padding: 8px 10px;
-  font-weight: 700;
-}
-.login-tabs button.on { background: var(--teal); color: #fff; border-color: var(--teal); }
 .login-card b { display: block; font-size: 1.2rem; margin-bottom: 4px; }
+.login-card .auth-lead { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
 .login-card p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
 .login-card label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
 .login-card input, .login-card select, #page-users input, #page-users select {
@@ -651,12 +643,8 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
 <div id="page-login" hidden>
   <div class="login-card">
     <b>ฐานข้อมูลพระภิกษุ</b>
-    <div class="login-tabs">
-      <button type="button" class="on" id="tab-login">เข้าสู่ระบบ</button>
-      <button type="button" id="tab-signup">สมัครใช้</button>
-    </div>
     <form id="login-form">
-      <p>เข้าใช้ด้วยเมลที่สมัคร · ระดับ วัด · ตำบลคณะสงฆ์ · อำเภอ · จังหวัด · ผู้ดูแลแพลตฟอร์ม</p>
+      <p class="auth-lead">เข้าสู่ระบบเพื่อใช้งาน</p>
       <label>เมล</label>
       <input id="login-user" type="email" autocomplete="username" required>
       <label>รหัสผ่าน</label>
@@ -664,8 +652,10 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       <p class="msg" id="login-err"></p>
       <button type="submit" class="btn" style="width:100%;margin-top:8px">เข้าสู่ระบบ</button>
       <button type="button" class="ghost" id="btn-forgot" style="width:100%;margin-top:8px">ลืมรหัสผ่าน?</button>
+      <button type="button" class="ghost" id="btn-goto-signup" style="width:100%;margin-top:8px">ยังไม่มีบัญชี? สมัครเข้าใช้งาน</button>
     </form>
     <form id="forgot-form" hidden>
+      <p class="auth-lead">ลืมรหัสผ่าน</p>
       <p>กรอกเมลที่ใช้สมัคร ระบบส่งรหัส 6 หลักไปเมลนั้น แล้วนำรหัสมาตั้งรหัสผ่านใหม่</p>
       <label>เมล</label>
       <input id="forgot-email" type="email" autocomplete="username" required>
@@ -681,7 +671,8 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       <button type="button" class="ghost" id="btn-back-login" style="width:100%;margin-top:8px">กลับไปเข้าสู่ระบบ</button>
     </form>
     <form id="signup-form" hidden>
-      <p>สมัครระดับวัดก่อน ใช้ได้ทันที · ใช้เมลจริง เพราะลืมรหัสจะส่งรหัสไปเมลนี้</p>
+      <p class="auth-lead">สมัครเข้าใช้งาน</p>
+      <p>สมัครระดับวัดก่อน ใช้ได้ทันที · ใช้เมลจริง เพราะลืมรหัสจะส่งรหัสไปเมลนี้ · เลือกจังหวัด แล้วอำเภอ แล้ววัด</p>
       <label>เมล</label>
       <input id="signup-user" type="email" maxlength="80" autocomplete="username" required>
       <label>รหัสผ่าน</label>
@@ -703,6 +694,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       <p class="hint">ระดับครั้งแรกเป็นวัด · ตำบลคณะสงฆ์ยังไม่ต้องเลือก</p>
       <p class="msg" id="signup-err"></p>
       <button type="submit" class="btn" style="width:100%;margin-top:8px">สมัครแล้วเข้าใช้</button>
+      <button type="button" class="ghost" id="btn-back-login-signup" style="width:100%;margin-top:8px">มีบัญชีอยู่แล้ว? เข้าสู่ระบบ</button>
     </form>
   </div>
 </div>
@@ -1607,6 +1599,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     document.body.classList.remove("places-on");
     $("page-login").hidden = false;
     $("dlg").hidden = true;
+    setAuthScreen("login");
   }
   function hideLogin() {
     document.body.classList.remove("need-login");
@@ -5541,25 +5534,24 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       $("login-err").textContent = e.message || "เข้าสู่ระบบไม่สำเร็จ";
     }
   };
-  function setAuthTab(which) {
+  function setAuthScreen(which) {
     const loginOn = which === "login";
     const signupOn = which === "signup";
     const forgotOn = which === "forgot";
-    $("tab-login").classList.toggle("on", loginOn || forgotOn);
-    $("tab-signup").classList.toggle("on", signupOn);
     $("login-form").hidden = !loginOn;
     $("signup-form").hidden = !signupOn;
     $("forgot-form").hidden = !forgotOn;
     $("login-err").textContent = "";
     $("signup-err").textContent = "";
     $("forgot-err").textContent = "";
+    if (loginOn && $("reset-box")) $("reset-box").hidden = true;
     if (signupOn) loadSignupPlaces();
     if (forgotOn && $("login-user").value) $("forgot-email").value = $("login-user").value;
   }
-  $("tab-login").onclick = function () { setAuthTab("login"); };
-  $("tab-signup").onclick = function () { setAuthTab("signup"); };
-  $("btn-forgot").onclick = function () { setAuthTab("forgot"); };
-  $("btn-back-login").onclick = function () { setAuthTab("login"); };
+  $("btn-forgot").onclick = function () { setAuthScreen("forgot"); };
+  $("btn-goto-signup").onclick = function () { setAuthScreen("signup"); };
+  $("btn-back-login").onclick = function () { setAuthScreen("login"); };
+  $("btn-back-login-signup").onclick = function () { setAuthScreen("login"); };
   $("forgot-form").onsubmit = async function (ev) {
     ev.preventDefault();
     $("forgot-err").textContent = "";
@@ -5588,7 +5580,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       $("reset-pass").value = "";
       $("reset-code").value = "";
       $("login-user").value = $("forgot-email").value;
-      setAuthTab("login");
+      setAuthScreen("login");
       $("login-err").textContent = data.message || "ตั้งรหัสใหม่แล้ว เข้าสู่ระบบได้";
     } catch (e) {
       $("forgot-err").textContent = e.message || "ตั้งรหัสใหม่ไม่สำเร็จ";
