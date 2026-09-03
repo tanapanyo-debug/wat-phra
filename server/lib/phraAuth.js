@@ -424,6 +424,16 @@ async function seedAdmin(pool) {
   return { username, password: generated ? password : null, generated };
 }
 
+async function applyAdminPassword(pool) {
+  const username = normalizeUsername(process.env.PHRA_ADMIN_USER || "admin") || "admin";
+  const password = String(process.env.PHRA_ADMIN_PASSWORD || "").trim();
+  if (!password) return false;
+  const r = await pool.query("SELECT id FROM phra_users WHERE username=$1", [username]);
+  if (!r.rowCount) return false;
+  await pool.query("UPDATE phra_users SET password_hash=$2 WHERE id=$1", [r.rows[0].id, hashPassword(password)]);
+  return true;
+}
+
 async function loadSession(pool, req) {
   const token = parseCookies(req)[COOKIE];
   if (!token) return null;
@@ -590,6 +600,7 @@ module.exports = {
   applyWatUserHome,
   ensureAuthSchema,
   seedAdmin,
+  applyAdminPassword,
   loadSession,
   createSession,
   destroySession,

@@ -40,6 +40,7 @@ const {
 const {
   ensureAuthSchema,
   seedAdmin,
+  applyAdminPassword,
   requireAuth,
   requireAdmin,
   login,
@@ -1940,6 +1941,7 @@ app.get("/", (req, res) => {
 async function start() {
   await ensureSchema();
   const seeded = await seedAdmin(pool);
+  const reset = await applyAdminPassword(pool);
   app.listen(PORT, BIND, () => {
     console.log("Monk database  http://" + (BIND === "127.0.0.1" ? "localhost" : BIND) + ":" + PORT);
     console.log("Separate from accounting 4000 and audit 4100");
@@ -1949,6 +1951,7 @@ async function start() {
     } else if (seeded) {
       console.log("created first admin user=" + seeded.username);
     }
+    if (reset) console.log("admin password taken from PHRA_ADMIN_PASSWORD");
   });
 }
 
