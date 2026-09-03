@@ -406,6 +406,20 @@ async function ensureSchema() {
   await pool.query(`CREATE INDEX IF NOT EXISTS monks_wat_id ON monks (wat_id) WHERE wat_id IS NOT NULL`);
   await pool.query(`CREATE INDEX IF NOT EXISTS monks_stay_wat_id ON monks (stay_wat_id) WHERE stay_wat_id IS NOT NULL`);
   await ensureCourses(pool);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS monk_rains (
+      id SERIAL PRIMARY KEY,
+      monk_id INTEGER NOT NULL REFERENCES monks(id) ON DELETE CASCADE,
+      year_be INTEGER NOT NULL,
+      wat_name TEXT NOT NULL DEFAULT '',
+      tambon TEXT NOT NULL DEFAULT '',
+      district TEXT NOT NULL DEFAULT '',
+      province TEXT NOT NULL DEFAULT '',
+      age INTEGER,
+      vassa INTEGER,
+      UNIQUE (monk_id, year_be)
+    )
+  `);
   await pool.query(`ALTER TABLE monk_rains ADD COLUMN IF NOT EXISTS sangha_tambon TEXT NOT NULL DEFAULT ''`);
   await pool.query(`ALTER TABLE monk_rains ADD COLUMN IF NOT EXISTS secular_edu TEXT NOT NULL DEFAULT ''`);
   await pool.query(`ALTER TABLE monk_rains ADD COLUMN IF NOT EXISTS naktham TEXT NOT NULL DEFAULT ''`);
@@ -446,20 +460,6 @@ async function ensureSchema() {
   await pool.query(`ALTER TABLE monk_affiliations ADD COLUMN IF NOT EXISTS to_district TEXT NOT NULL DEFAULT ''`);
   await pool.query(`ALTER TABLE monk_affiliations ADD COLUMN IF NOT EXISTS to_province TEXT NOT NULL DEFAULT ''`);
   await pool.query(`ALTER TABLE monk_affiliations ADD COLUMN IF NOT EXISTS to_event_text TEXT NOT NULL DEFAULT ''`);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS monk_rains (
-      id SERIAL PRIMARY KEY,
-      monk_id INTEGER NOT NULL REFERENCES monks(id) ON DELETE CASCADE,
-      year_be INTEGER NOT NULL,
-      wat_name TEXT NOT NULL DEFAULT '',
-      tambon TEXT NOT NULL DEFAULT '',
-      district TEXT NOT NULL DEFAULT '',
-      province TEXT NOT NULL DEFAULT '',
-      age INTEGER,
-      vassa INTEGER,
-      UNIQUE (monk_id, year_be)
-    )
-  `);
 }
 
 function isoFromText(v) {
