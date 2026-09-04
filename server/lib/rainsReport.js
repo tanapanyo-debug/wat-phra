@@ -139,7 +139,7 @@ function remarkOf(title, note, rainRemark) {
   const t = dash(title);
   const n = dash(note);
   const blob = (t + " " + n).replace(/\s+/g, "");
-  const hit = blob.match(/(ท?ผจล|ท?ผจร|รจล|รจร|จล|จร|รก)(?:\.[ชอทตพวิ]*)?\.?/);
+  const hit = blob.match(/(?:^|[^ก-ฮA-Za-z])(ท?ผจล|ท?ผจร|รจล|รจร|จล|จร|รก)(?:\.[ชอทตพวิ]*)?\.?/);
   if (hit) {
     const code = hit[1];
     if (code === "ทผจล" || code === "ผจล") return "ผจล.";

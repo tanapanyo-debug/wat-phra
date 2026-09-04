@@ -82,6 +82,8 @@ eq(note.pali, "3", "note pali");
 eq(remarkOf("เจ้าอาวาส", "", ""), "จร.", "abbot remark");
 eq(remarkOf("", "จล.", ""), "จล.", "code from note");
 eq(remarkOf("ผู้ช่วยเจ้าอาวาส", "", ""), "ผจร.", "assistant remark");
+eq(remarkOf("", "มาเรียนหนังสือที่ มจร.", ""), "", "MCU abbreviation is not abbot");
+eq(remarkOf("", "จร.วัดอินทาราม", ""), "จร.", "abbot code in note still counts");
 
 const form = formRow({
   chaya: "พระธรรมรัตนมงคล กตสาโร",
