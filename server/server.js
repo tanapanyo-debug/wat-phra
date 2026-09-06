@@ -55,10 +55,15 @@ const {
   setSessionCookie,
   clearSessionCookie,
   registerUser,
+  isRegisterOpen,
+  setRegisterOpen,
   requestLevel,
   approveRequestedLevel,
   rejectRequestedLevel,
+  approveAccount,
+  rejectAccount,
   canApproveRequested,
+  canApproveAccount,
   usersVisibleWhere,
   appendViewScope,
   appendHomeScope,
@@ -901,6 +906,16 @@ app.get("/api/health", async (req, res) => {
   } catch (e) {}
   res.json({ ok: true, app: "wat-phra", nidhi2569: nidhi2569 });
 });
+app.get("/api/status", async (req, res) => {
+  try {
+    res.json({
+      registerOpen: await isRegisterOpen(pool),
+      mailConfigured: await isMailConfigured(pool)
+    });
+  } catch (e) {
+    res.status(500).json({ error: "ตรวจสอบสถานะระบบไม่สำเร็จ" });
+  }
+});
 app.post("/api/login", async (req, res) => {
   try {
     if (!loginAllowed(clientIp(req))) {
@@ -927,6 +942,9 @@ app.post("/api/register", async (req, res) => {
       tambon: body.tambon
     });
     const out = await registerUser(pool, body, wat);
+    if (out.pending) {
+      return res.status(201).json({ pending: true, message: out.message, watName: wat && wat.name });
+    }
     setSessionCookie(res, out.token);
     res.json({ user: out.user });
   } catch (e) {
@@ -1012,13 +1030,15 @@ app.get("/api/users", requireUserManager, async (req, res) => {
     const params = [];
     const where = usersVisibleWhere(req.user, params);
     const r = await pool.query(
-      "SELECT * FROM phra_users WHERE 1=1" + where + " ORDER BY CASE WHEN requested_level <> '' THEN 0 ELSE 1 END, access_level, username, id",
+      "SELECT * FROM phra_users WHERE 1=1" + where +
+      " ORDER BY CASE WHEN status='pending' THEN 0 WHEN requested_level <> '' THEN 1 ELSE 2 END, access_level, username, id",
       params
     );
     res.json({
       users: r.rows.map((row) => {
         const u = publicUser(row);
         u.canApprove = canApproveRequested(req.user, u);
+        u.canApproveAccount = canApproveAccount(req.user, u);
         return u;
       })
     });
@@ -1030,8 +1050,8 @@ app.post("/api/users", requireAdmin, async (req, res) => {
   try {
     const b = await fillUserScope(pool, readUserBody(req.body || {}, true));
     const r = await pool.query(
-      `INSERT INTO phra_users (username, password_hash, display_name, access_level, wat_id, wat_name, sangha_tambon, district, province)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      `INSERT INTO phra_users (username, password_hash, display_name, access_level, status, wat_id, wat_name, sangha_tambon, district, province)
+       VALUES ($1,$2,$3,$4,'approved',$5,$6,$7,$8,$9) RETURNING *`,
       [b.username, hashPassword(b.password), b.displayName, b.accessLevel, b.watId, b.watName, b.sanghaTambon, b.district, b.province]
     );
     res.json({ user: publicUser(r.rows[0]) });
@@ -1093,6 +1113,30 @@ app.post("/api/users/:id/approve", requireUserManager, async (req, res) => {
 app.post("/api/users/:id/reject", requireUserManager, async (req, res) => {
   try {
     const user = await rejectRequestedLevel(pool, req.user, req.params.id);
+    res.json({ user });
+  } catch (e) {
+    sendErr(res, e, "ปฏิเสธไม่สำเร็จ");
+  }
+});
+app.put("/api/register-open", requireAdmin, async (req, res) => {
+  try {
+    const registerOpen = await setRegisterOpen(pool, !!(req.body && req.body.open));
+    res.json({ ok: true, registerOpen });
+  } catch (e) {
+    sendErr(res, e, "บันทึกการเปิดรับสมัครไม่สำเร็จ");
+  }
+});
+app.post("/api/users/:id/approve-account", requireUserManager, async (req, res) => {
+  try {
+    const user = await approveAccount(pool, req.user, req.params.id);
+    res.json({ user });
+  } catch (e) {
+    sendErr(res, e, "อนุมัติไม่สำเร็จ");
+  }
+});
+app.post("/api/users/:id/reject-account", requireUserManager, async (req, res) => {
+  try {
+    const user = await rejectAccount(pool, req.user, req.params.id);
     res.json({ user });
   } catch (e) {
     sendErr(res, e, "ปฏิเสธไม่สำเร็จ");

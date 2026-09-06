@@ -94,9 +94,22 @@ function verifyPassword(plain, stored) {
   return crypto.timingSafeEqual(got, want);
 }
 
+function parseAccountStatus(v) {
+  const s = clean(v).toLowerCase();
+  if (s === "pending" || s === "rejected") return s;
+  return "approved";
+}
+
+function accountStatusMessage(status) {
+  if (status === "pending") return "สมัครเสร็จแล้ว รอแพลตฟอร์มอนุมัติจึงใช้งานได้";
+  if (status === "rejected") return "บัญชีนี้ยังไม่ได้รับอนุญาตให้เข้าใช้งาน";
+  return "บัญชีนี้ยังไม่ได้รับอนุญาตให้เข้าใช้งาน";
+}
+
 function publicUser(row) {
   if (!row) return null;
   const accessLevel = parseAccessLevel(row.access_level) || "wat";
+  const status = parseAccountStatus(row.status);
   return {
     id: row.id,
     username: row.username,
@@ -104,6 +117,8 @@ function publicUser(row) {
     displayName: row.display_name || "",
     accessLevel,
     accessLabel: ACCESS_LABEL[accessLevel] || accessLevel,
+    status,
+    pending: status === "pending",
     watId: row.wat_id || null,
     watName: row.wat_name || "",
     sanghaTambon: row.sangha_tambon || "",
@@ -476,6 +491,7 @@ async function ensureAuthSchema(pool) {
   `);
   await pool.query(`ALTER TABLE phra_users ADD COLUMN IF NOT EXISTS requested_level TEXT NOT NULL DEFAULT ''`);
   await pool.query(`ALTER TABLE phra_users ADD COLUMN IF NOT EXISTS requested_at TIMESTAMPTZ`);
+  await pool.query(`ALTER TABLE phra_users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'approved'`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS phra_password_resets (
       user_id INTEGER PRIMARY KEY REFERENCES phra_users(id) ON DELETE CASCADE,
@@ -496,6 +512,7 @@ async function ensureAuthSchema(pool) {
     )
   `);
   await pool.query(`INSERT INTO phra_mail_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING`);
+  await pool.query(`ALTER TABLE phra_mail_settings ADD COLUMN IF NOT EXISTS register_closed BOOLEAN NOT NULL DEFAULT true`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS phra_sessions (
       token TEXT PRIMARY KEY,
@@ -647,7 +664,9 @@ async function loadSession(pool, req) {
       WHERE s.token = $1 AND s.expires_at > now()`,
     [token]
   );
-  return enrichPublicUser(pool, publicUser(r.rows[0]));
+  const row = r.rows[0];
+  if (!row || parseAccountStatus(row.status) !== "approved") return null;
+  return enrichPublicUser(pool, publicUser(row));
 }
 
 async function createSession(pool, userId) {
@@ -692,6 +711,10 @@ async function login(pool, username, password) {
   const row = r.rows[0];
   if (!row || !verifyPassword(password, row.password_hash)) {
     throw deny(401, "เมลหรือรหัสผ่านไม่ถูกต้อง");
+  }
+  const status = parseAccountStatus(row.status);
+  if (status !== "approved") {
+    throw deny(403, accountStatusMessage(status));
   }
   const token = await createSession(pool, row.id);
   return { token, user: await enrichPublicUser(pool, publicUser(row)) };
@@ -848,7 +871,7 @@ function readUserBody(body, isCreate) {
 }
 
 function isPublicApiPath(path) {
-  return path === "/health" || path === "/login" || path === "/register"
+  return path === "/health" || path === "/status" || path === "/login" || path === "/register"
     || path === "/forgot-password" || path === "/reset-password"
     || path === "/temples/provinces" || path === "/temples/districts" || path === "/temples/in-place";
 }
@@ -905,23 +928,61 @@ function usersVisibleWhere(user, params) {
   return " AND 1=0";
 }
 
+function canApproveAccount(actor, target) {
+  if (!actor || !target || target.status !== "pending") return false;
+  if (actor.accessLevel === "admin") return true;
+  if (actor.accessLevel === "province") return sameName(actor.province, target.province);
+  if (actor.accessLevel === "district") return sameName(actor.district, target.district);
+  return false;
+}
+
+async function isRegisterOpen(pool) {
+  if (process.env.ALLOW_PUBLIC_REGISTER === "true") return true;
+  if (process.env.ALLOW_PUBLIC_REGISTER === "false") return false;
+  try {
+    const r = await pool.query(
+      "SELECT COALESCE(register_closed, true) AS closed FROM phra_mail_settings WHERE id = 1"
+    );
+    if (!r.rows[0]) return false;
+    return !r.rows[0].closed;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function setRegisterOpen(pool, open) {
+  const isOpen = !!open;
+  await pool.query(
+    `INSERT INTO phra_mail_settings (id, register_closed)
+     VALUES (1, $1)
+     ON CONFLICT (id) DO UPDATE SET register_closed = EXCLUDED.register_closed`,
+    [!isOpen]
+  );
+  return isRegisterOpen(pool);
+}
+
 async function registerUser(pool, body, wat) {
+  if (!(await isRegisterOpen(pool))) throw deny(403, "ระบบนี้ยังไม่เปิดรับสมัคร");
   const username = requireAccountEmail(body && (body.email || body.username), true);
   const password = String((body && body.password) || "");
   const displayName = clean(body && body.displayName).slice(0, 80);
   if (password.length < 6) throw deny(400, "รหัสผ่านอย่างน้อย 6 ตัว");
   if (!wat || !wat.id) throw deny(400, "เลือกจังหวัด อำเภอ และวัด");
   const r = await pool.query(
-    `INSERT INTO phra_users (username, password_hash, display_name, access_level, wat_id, wat_name, sangha_tambon, district, province)
-     VALUES ($1,$2,$3,'wat',$4,$5,'',$6,$7) RETURNING *`,
+    `INSERT INTO phra_users (username, password_hash, display_name, access_level, status, wat_id, wat_name, sangha_tambon, district, province)
+     VALUES ($1,$2,$3,'wat','pending',$4,$5,'',$6,$7) RETURNING *`,
     [username, hashPassword(password), displayName, wat.id, wat.name || "", wat.district || "", wat.province || ""]
   );
-  const token = await createSession(pool, r.rows[0].id);
-  return { token, user: await enrichPublicUser(pool, publicUser(r.rows[0])) };
+  return {
+    pending: true,
+    message: accountStatusMessage("pending"),
+    user: await enrichPublicUser(pool, publicUser(r.rows[0]))
+  };
 }
 
 async function requestLevel(pool, user, wanted) {
   if (!user || !user.id) throw deny(401, "กรุณาเข้าสู่ระบบ");
+  if (user.status && user.status !== "approved") throw deny(403, accountStatusMessage(user.status));
   const lv = parseAccessLevel(wanted);
   if (!lv || lv === "admin" || lv === "wat") {
     throw deny(400, "ขอได้เฉพาะระดับตำบลคณะสงฆ์ อำเภอ หรือจังหวัด");
@@ -965,6 +1026,35 @@ async function rejectRequestedLevel(pool, actor, targetId) {
   if (!canApproveRequested(actor, target)) throw deny(403, "ไม่มีสิทธิ์ปฏิเสธคำขอนี้");
   const r = await pool.query(
     "UPDATE phra_users SET requested_level='', requested_at=NULL, updated_at=now() WHERE id=$1 RETURNING *",
+    [id]
+  );
+  return publicUser(r.rows[0]);
+}
+
+async function approveAccount(pool, actor, targetId) {
+  const id = Number(targetId);
+  if (!id) throw deny(400, "ไม่พบผู้ใช้");
+  const cur = await pool.query("SELECT * FROM phra_users WHERE id=$1", [id]);
+  if (!cur.rowCount) throw deny(404, "ไม่พบผู้ใช้");
+  const target = publicUser(cur.rows[0]);
+  if (!canApproveAccount(actor, target)) throw deny(403, "ไม่มีสิทธิ์อนุมัติผู้ใช้นี้");
+  const r = await pool.query(
+    "UPDATE phra_users SET status='approved', updated_at=now() WHERE id=$1 RETURNING *",
+    [id]
+  );
+  return publicUser(r.rows[0]);
+}
+
+async function rejectAccount(pool, actor, targetId) {
+  const id = Number(targetId);
+  if (!id) throw deny(400, "ไม่พบผู้ใช้");
+  const cur = await pool.query("SELECT * FROM phra_users WHERE id=$1", [id]);
+  if (!cur.rowCount) throw deny(404, "ไม่พบผู้ใช้");
+  const target = publicUser(cur.rows[0]);
+  if (!canApproveAccount(actor, target)) throw deny(403, "ไม่มีสิทธิ์ปฏิเสธผู้ใช้นี้");
+  await pool.query("DELETE FROM phra_sessions WHERE user_id=$1", [id]);
+  const r = await pool.query(
+    "UPDATE phra_users SET status='rejected', requested_level='', requested_at=NULL, updated_at=now() WHERE id=$1 RETURNING *",
     [id]
   );
   return publicUser(r.rows[0]);
@@ -1022,9 +1112,16 @@ module.exports = {
   requireUserManager,
   canManageUsers,
   canApproveRequested,
+  canApproveAccount,
   usersVisibleWhere,
   registerUser,
+  isRegisterOpen,
+  setRegisterOpen,
+  parseAccountStatus,
+  accountStatusMessage,
   requestLevel,
   approveRequestedLevel,
-  rejectRequestedLevel
+  rejectRequestedLevel,
+  approveAccount,
+  rejectAccount
 };

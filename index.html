@@ -384,6 +384,7 @@ details.reg-book { padding-top: 4px; }
   body.print-rains { background: #fff; page: rains-sheet; }
 }
 form { display: grid; gap: 8px; }
+form[hidden], [hidden] { display: none !important; }
 label { font-size: 12px; color: var(--muted); }
 label .en, summary .en, .sec-title .en, h3 .en, h2 .en, .hint .en {
   font-weight: 400;
@@ -652,7 +653,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       <p class="msg" id="login-err"></p>
       <button type="submit" class="btn" style="width:100%;margin-top:8px">เข้าสู่ระบบ</button>
       <button type="button" class="ghost" id="btn-forgot" style="width:100%;margin-top:8px">ลืมรหัสผ่าน?</button>
-      <button type="button" class="ghost" id="btn-goto-signup" style="width:100%;margin-top:8px">ยังไม่มีบัญชี? สมัครเข้าใช้งาน</button>
+      <button type="button" class="ghost" id="btn-goto-signup" hidden style="width:100%;margin-top:8px">ยังไม่มีบัญชี? สมัครเข้าใช้งาน</button>
     </form>
     <form id="forgot-form" hidden>
       <p class="auth-lead">ลืมรหัสผ่าน</p>
@@ -672,7 +673,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     </form>
     <form id="signup-form" hidden>
       <p class="auth-lead">สมัครเข้าใช้งาน</p>
-      <p>สมัครระดับวัดก่อน ใช้ได้ทันที · ใช้เมลจริง เพราะลืมรหัสจะส่งรหัสไปเมลนี้ · เลือกจังหวัด แล้วอำเภอ แล้ววัด</p>
+      <p>ใช้เมลจริง เพราะลืมรหัสจะส่งรหัสไปเมลนี้ · เลือกจังหวัด แล้วอำเภอ แล้ววัด · สมัครแล้วรอผู้ดูแลอนุมัติจึงเข้าใช้งานได้</p>
       <label>เมล</label>
       <input id="signup-user" type="email" maxlength="80" autocomplete="username" required>
       <label>รหัสผ่าน</label>
@@ -691,9 +692,9 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       <select id="signup-wat" required>
         <option value="">เลือกอำเภอก่อน</option>
       </select>
-      <p class="hint">ระดับครั้งแรกเป็นวัด · ตำบลคณะสงฆ์ยังไม่ต้องเลือก</p>
+      <p class="hint">สมัครได้เฉพาะช่วงที่ผู้ดูแลเปิดรับสมัคร · ยังเข้าใช้ไม่ได้จนกว่าจะได้รับอนุมัติ</p>
       <p class="msg" id="signup-err"></p>
-      <button type="submit" class="btn" style="width:100%;margin-top:8px">สมัครแล้วเข้าใช้</button>
+      <button type="submit" class="btn" style="width:100%;margin-top:8px">สมัครใช้งาน</button>
       <button type="button" class="ghost" id="btn-back-login-signup" style="width:100%;margin-top:8px">มีบัญชีอยู่แล้ว? เข้าสู่ระบบ</button>
     </form>
   </div>
@@ -843,7 +844,11 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
 <section class="wrap" id="page-users" hidden>
   <div class="card">
     <h2 style="margin:0 0 8px;font-size:1.15rem">ผู้ใช้ตามระดับ</h2>
-    <p class="hint">สมัครใหม่เป็นระดับวัด · เลือกจังหวัด แล้วอำเภอ แล้ววัด · ตำบลคณะสงฆ์จัดภายหลัง · ตำบลคณะสงฆ์ให้อำเภอหรือผู้ดูแลแพลตฟอร์มอนุมัติ · อำเภอให้จังหวัดหรือผู้ดูแลแพลตฟอร์มอนุมัติ · จังหวัดให้ผู้ดูแลแพลตฟอร์มอนุมัติ</p>
+    <p class="hint">สมัครได้เมื่อผู้ดูแลเปิดรับสมัคร · สมัครแล้วต้องอนุมัติจึงเข้าใช้งานได้ · ตำบลคณะสงฆ์ให้อำเภอหรือผู้ดูแลแพลตฟอร์มอนุมัติระดับ · อำเภอให้จังหวัดหรือผู้ดูแลแพลตฟอร์มอนุมัติ · จังหวัดให้ผู้ดูแลแพลตฟอร์มอนุมัติ</p>
+    <div id="register-gate" hidden>
+      <p>สถานะรับสมัคร: <b id="register-gate-state">ปิดรับสมัคร</b></p>
+      <button type="button" class="btn" id="btn-register-toggle">เปิดรับสมัคร</button>
+    </div>
     <div id="user-pending"></div>
     <div id="user-edit-form">
     <div class="grid2">
@@ -949,7 +954,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
               <option value="ภิกษุ">ภิกษุ / Bhikkhu</option>
               <option value="สามเณร">สามเณร / Samanera</option>
             </select>
-          </div>
+        </div>
           <div>
             <label>สังกัดนิกาย <span class="en">Nikaya</span></label>
             <input id="nikaya" maxlength="80" placeholder="มหานิกาย / ธรรมยุต · Mahanikaya / Dhammayuttika">
@@ -960,7 +965,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
           <div>
             <label>ชื่อ (ราชทินนาม หรือฐานานุกรม) <span class="en">Name / royal title</span></label>
             <input id="sanghaName" maxlength="160" list="samanasak-name" placeholder="พระสมชาย หรือ Phra Somchai / พระครูสมุห์">
-          </div>
+        </div>
           <div>
             <label>ฉายา * <span class="en">Chaya (Pali name)</span></label>
             <input id="chayaPali" maxlength="80" placeholder="บาลี หรือ romanized Pali">
@@ -1047,12 +1052,12 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
         <div class="readonly" id="vassaBox">พรรษาคำนวณจากวันอุปสมบทในส่วนที่ 3 · Vassa from part 3</div>
         <div>
           <label>สถานะ <span class="en">Current status</span></label>
-          <select id="status">
+            <select id="status">
             <option value="จำพรรษา">จำพรรษา / Resident</option>
             <option value="ย้ายวัด">ย้ายวัด / Moved</option>
             <option value="มรณภาพ">มรณภาพ / Passed away</option>
             <option value="ลาสิกขา">ลาสิกขา / Disrobed</option>
-          </select>
+            </select>
           <div id="movedToWrap" hidden style="margin-top:8px">
             <label>วัดที่ย้ายไป <span class="en">Moved to</span></label>
             <input id="movedToWat" maxlength="160" list="wat-catalog" placeholder="ชื่อวัดปลายทาง">
@@ -1592,7 +1597,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       headers: { "Content-Type": "application/json" }
     }, opt || {}));
     const data = await res.json().catch(function () { return {}; });
-    if (res.status === 401 && path !== "/login" && path !== "/register" && path !== "/forgot-password" && path !== "/reset-password" && path.indexOf("/temples/") !== 0) showLogin();
+    if (res.status === 401 && path !== "/login" && path !== "/register" && path !== "/status" && path !== "/forgot-password" && path !== "/reset-password" && path.indexOf("/temples/") !== 0) showLogin();
     if (!res.ok) throw new Error(data.error || "ไม่สำเร็จ");
     return data;
   }
@@ -1600,6 +1605,33 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
   let me = null;
   let editingUser = null;
   let applyAccountPlace = true;
+  let registerOpen = false;
+  async function refreshRegisterOpen() {
+    try {
+      const d = await api("/status");
+      registerOpen = !!(d && d.registerOpen);
+    } catch (e) {
+      registerOpen = false;
+    }
+    const btn = $("btn-goto-signup");
+    if (btn) btn.hidden = !registerOpen;
+    if (!registerOpen) {
+      const signup = $("signup-form");
+      if (signup && !signup.hidden) setAuthScreen("login");
+    }
+    paintRegisterGate();
+  }
+  function paintRegisterGate() {
+    const box = $("register-gate");
+    if (!box) return;
+    const isAdmin = me && me.accessLevel === "admin";
+    box.hidden = !isAdmin;
+    if (!isAdmin) return;
+    const state = $("register-gate-state");
+    const btn = $("btn-register-toggle");
+    if (state) state.textContent = registerOpen ? "เปิดรับสมัครอยู่" : "ปิดรับสมัคร";
+    if (btn) btn.textContent = registerOpen ? "ปิดรับสมัคร" : "เปิดรับสมัคร";
+  }
   function showLogin() {
     me = null;
     applyAccountPlace = true;
@@ -1607,7 +1639,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     document.body.classList.remove("places-on");
     $("page-login").hidden = false;
     $("dlg").hidden = true;
-    setAuthScreen("login");
+    refreshRegisterOpen().then(function () { setAuthScreen("login"); });
   }
   function hideLogin() {
     document.body.classList.remove("need-login");
@@ -1626,7 +1658,10 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     wat.disabled = lv === "wat";
     if ($("user-edit-form")) $("user-edit-form").hidden = lv !== "admin";
     if ($("mail-settings")) $("mail-settings").hidden = lv !== "admin";
-    if (lv === "admin") loadMailSettings();
+    if (lv === "admin") {
+      loadMailSettings();
+      refreshRegisterOpen();
+    }
     paintLevelRequest();
     if ((lv === "tambon" || lv === "wat") && me.sanghaTambon) {
       if ([].some.call(sangha.options, function (o) { return o.value === me.sanghaTambon; })) {
@@ -5824,7 +5859,13 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
         })
       });
       $("signup-pass").value = "";
-      await onLoggedIn(data.user);
+      if (data && data.pending) {
+        $("signup-err").textContent = data.message || "สมัครเสร็จแล้ว รออนุมัติจึงใช้งานได้";
+        setAuthScreen("login");
+        $("login-err").textContent = data.message || "สมัครเสร็จแล้ว รออนุมัติจึงใช้งานได้";
+        return;
+      }
+      if (data && data.user) await onLoggedIn(data.user);
     } catch (e) {
       $("signup-err").textContent = e.message || "สมัครไม่สำเร็จ";
     }
@@ -5989,11 +6030,26 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     if ($("user-err-list")) $("user-err-list").textContent = "";
     const data = await api("/users");
     const list = data.users || [];
-    const pending = list.filter(function (u) { return u.requestedLevel; });
+    await refreshRegisterOpen();
+    const waitAccount = list.filter(function (u) { return u.status === "pending"; });
+    const pending = list.filter(function (u) { return u.requestedLevel && u.status !== "pending"; });
     const pendBox = $("user-pending");
     if (pendBox) {
-      pendBox.innerHTML = pending.length
-        ? "<h3 style=\"margin:12px 0 8px;font-size:1rem\">รออนุมัติ</h3>" +
+      let html = "";
+      if (waitAccount.length) {
+        html += "<h3 style=\"margin:12px 0 8px;font-size:1rem\">รออนุมัติให้เข้าใช้ (" + waitAccount.length + ")</h3>" +
+          waitAccount.map(function (u) {
+            const acts = u.canApproveAccount
+              ? '<button type="button" class="btn tiny" data-approve-acc="' + u.id + '">ให้ใช้</button>' +
+                ' <button type="button" class="ghost tiny" data-reject-acc="' + u.id + '">ไม่ให้ใช้</button>'
+              : "<span class=\"hint\">รอผู้ดูแลอนุมัติ</span>";
+            return '<div class="card" style="margin:0 0 8px"><b>' + esc(u.displayName || u.username) +
+              "</b> · " + esc(u.username) + " · " + esc(u.watName || u.district || u.province || "") +
+              '<div class="bar" style="margin:8px 0 0">' + acts + "</div></div>";
+          }).join("");
+      }
+      if (pending.length) {
+        html += "<h3 style=\"margin:12px 0 8px;font-size:1rem\">รออนุมัติระดับ</h3>" +
           pending.map(function (u) {
             const tambonField = u.requestedLevel === "tambon"
               ? '<input data-approve-tambon="' + u.id + '" maxlength="80" placeholder="ตำบลคณะสงฆ์" list="user-tambon-list" style="min-width:140px">'
@@ -6007,8 +6063,31 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
               "</b> ขอระดับ " + esc(u.requestedLabel || u.requestedLevel) +
               " · " + esc(u.watName || u.district || u.province || "") +
               '<div class="bar" style="margin:8px 0 0">' + acts + "</div></div>";
-          }).join("")
-        : "";
+          }).join("");
+      }
+      pendBox.innerHTML = html;
+      pendBox.querySelectorAll("[data-approve-acc]").forEach(function (btn) {
+        btn.onclick = async function () {
+          try {
+            await api("/users/" + btn.getAttribute("data-approve-acc") + "/approve-account", { method: "POST", body: "{}" });
+            await loadUsers();
+          } catch (e) {
+            if ($("user-err-list")) $("user-err-list").textContent = e.message || "อนุมัติไม่สำเร็จ";
+            else $("user-err").textContent = e.message || "อนุมัติไม่สำเร็จ";
+          }
+        };
+      });
+      pendBox.querySelectorAll("[data-reject-acc]").forEach(function (btn) {
+        btn.onclick = async function () {
+          try {
+            await api("/users/" + btn.getAttribute("data-reject-acc") + "/reject-account", { method: "POST", body: "{}" });
+            await loadUsers();
+          } catch (e) {
+            if ($("user-err-list")) $("user-err-list").textContent = e.message || "ปฏิเสธไม่สำเร็จ";
+            else $("user-err").textContent = e.message || "ปฏิเสธไม่สำเร็จ";
+          }
+        };
+      });
       pendBox.querySelectorAll("[data-approve]").forEach(function (btn) {
         btn.onclick = async function () {
           const id = btn.getAttribute("data-approve");
@@ -6046,7 +6125,9 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
             : u.accessLevel === "district" ? ((u.province || "") + " · " + (u.district || ""))
             : u.accessLevel === "province" ? (u.province || "")
             : "ทั้งหมด";
-          const wait = u.requestedLevel ? " · รอ " + (u.requestedLabel || "") : "";
+          const wait = u.status === "pending" ? " · รออนุมัติเข้าใช้"
+            : u.status === "rejected" ? " · ไม่ให้ใช้"
+            : u.requestedLevel ? " · รอ " + (u.requestedLabel || "") : "";
           const acts = isAdmin
             ? '<button type="button" class="ghost tiny" data-edit="' + u.id + '">แก้</button> ' +
               '<button type="button" class="danger tiny" data-del="' + u.id + '">ลบ</button>'
@@ -6078,6 +6159,20 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
   }
   $("user-level").onchange = toggleUserScopeFields;
   $("btn-user-clear").onclick = clearUserForm;
+  if ($("btn-register-toggle")) $("btn-register-toggle").onclick = async function () {
+    try {
+      const d = await api("/register-open", {
+        method: "PUT",
+        body: JSON.stringify({ open: !registerOpen })
+      });
+      registerOpen = !!(d && d.registerOpen);
+      paintRegisterGate();
+      const btn = $("btn-goto-signup");
+      if (btn) btn.hidden = !registerOpen;
+    } catch (e) {
+      if ($("user-err-list")) $("user-err-list").textContent = e.message || "บันทึกการเปิดรับสมัครไม่สำเร็จ";
+    }
+  };
   $("btn-user-save").onclick = async function () {
     $("user-err").textContent = "";
     const body = {

@@ -16,6 +16,9 @@ const {
   ACCESS_LABEL,
   canManageUsers,
   canApproveRequested,
+  canApproveAccount,
+  parseAccountStatus,
+  accountStatusMessage,
   isEmail,
   PLATFORM_ADMIN_EMAIL,
   ADMIN_HOME_WAT,
@@ -115,6 +118,14 @@ eq(canApproveRequested({ accessLevel: "province", province: "พระนคร�
 eq(canApproveRequested({ accessLevel: "district", district: "พระนครศรีอยุธยา" }, { requestedLevel: "province", province: "พระนครศรีอยุธยา" }), false, "district cannot approve province");
 eq(canApproveRequested({ accessLevel: "admin" }, { requestedLevel: "province", province: "พระนครศรีอยุธยา" }), true, "platform approves province");
 
+eq(parseAccountStatus("pending"), "pending", "status pending");
+eq(parseAccountStatus(""), "approved", "status default approved");
+eq(accountStatusMessage("pending").indexOf("รอ") >= 0, true, "pending message");
+eq(canApproveAccount({ accessLevel: "admin" }, { status: "pending", district: "ผักไห่" }), true, "admin approves signup");
+eq(canApproveAccount({ accessLevel: "district", district: "ผักไห่" }, { status: "pending", district: "ผักไห่" }), true, "district approves signup in area");
+eq(canApproveAccount({ accessLevel: "district", district: "ผักไห่" }, { status: "pending", district: "วังน้อย" }), false, "district other area");
+eq(canApproveAccount({ accessLevel: "admin" }, { status: "approved", district: "ผักไห่" }), false, "already approved");
+
 const distUser = { accessLevel: "district", district: "พระนครศรีอยุธยา" };
 eq(appendViewScope(distUser, [], "m").indexOf("district") >= 0, true, "district scope");
 eq(filterWats(distUser, [
@@ -144,6 +155,13 @@ eq(serverSrc.indexOf("$9 = '' OR COALESCE(NULLIF(pw.province") >= 0, true, "repo
 eq(serverSrc.indexOf("yearPwJoinSql") >= 0, true, "year list joins rain place");
 eq(serverSrc.indexOf("$6 <> '' AND (COALESCE(NULLIF(y.wat_name,''), m.wat_name) = $6") >= 0, true, "wat filter keeps rain guests");
 eq(serverSrc.indexOf("lv === \"wat\" && req.user.watName") >= 0, true, "places catalog scoped to wat");
+
+const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+eq(html.indexOf("form[hidden]") >= 0, true, "hidden forms stay hidden");
+eq(html.indexOf("รอผู้ดูแลอนุมัติจึงเข้าใช้งานได้") >= 0, true, "signup waits for approval");
+eq(html.indexOf("สมัครแล้วเข้าใช้") >= 0, false, "no instant signup login");
+eq(html.indexOf('id="btn-goto-signup" hidden') >= 0, true, "signup button hidden until open");
+eq(html.indexOf("btn-register-toggle") >= 0, true, "admin can open register");
 
 const { thaiPlaceName, watAlias } = require("./lib/formExcelImport");
 eq(watAlias("Wat Intharam"), "วัดอินทาราม", "alias intharam");
