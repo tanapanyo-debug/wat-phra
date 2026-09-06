@@ -162,6 +162,8 @@ eq(html.indexOf("รอผู้ดูแลอนุมัติจึงเข
 eq(html.indexOf("สมัครแล้วเข้าใช้") >= 0, false, "no instant signup login");
 eq(html.indexOf('id="btn-goto-signup" hidden') >= 0, true, "signup button hidden until open");
 eq(html.indexOf("btn-register-toggle") >= 0, true, "admin can open register");
+eq((html.match(/กลับเมนูหลัก/g) || []).length >= 3, true, "กลับเมนูหลัก on login, nav, list");
+eq(html.indexOf('href="https://wat-accounting.onrender.com/hub"') >= 0, true, "กลับเมนูหลัก goes to hub");
 
 const { thaiPlaceName, watAlias } = require("./lib/formExcelImport");
 eq(watAlias("Wat Intharam"), "วัดอินทาราม", "alias intharam");

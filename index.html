@@ -458,6 +458,8 @@ body.places-on #btn-logout {
 .login-card b { display: block; font-size: 1.2rem; margin-bottom: 4px; }
 .login-card .auth-lead { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
 .login-card p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+.login-card .hub-foot { margin: 16px 0 0; text-align: center; }
+.login-card .hub-foot a { color: var(--teal-d); font-size: 13px; font-weight: 700; }
 .login-card label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
 .login-card input, .login-card select, #page-users input, #page-users select {
   width: 100%;
@@ -556,6 +558,14 @@ table.rains-sheet td.name, table.rains-sheet td.chaya, table.rains-sheet td.wat 
 .nav { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
 .nav button { background: #fff; border: 1px solid var(--line); padding: 8px 12px; font-weight: 700; }
 .nav button.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+.nav a.ghost {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 8px 12px;
+  color: var(--ink);
+}
 body.places-on { background: #e8edf2; }
 body.places-on .top {
   background: linear-gradient(135deg, #0f766e 0%, #0d9488 55%, #14b8a6 100%);
@@ -564,6 +574,7 @@ body.places-on .top {
 body.places-on .top small { color: rgba(255,255,255,.88); }
 body.places-on .nav button { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.35); color: #fff; }
 body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: #fff; }
+body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); background: rgba(255,255,255,.14); }
 #page-places {
   max-width: 920px;
   font-family: Sarabun, "TH Sarabun New", "Leelawadee UI", sans-serif;
@@ -697,6 +708,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
       <button type="submit" class="btn" style="width:100%;margin-top:8px">สมัครใช้งาน</button>
       <button type="button" class="ghost" id="btn-back-login-signup" style="width:100%;margin-top:8px">มีบัญชีอยู่แล้ว? เข้าสู่ระบบ</button>
     </form>
+    <p class="hub-foot"><a href="https://wat-accounting.onrender.com/hub">กลับเมนูหลัก</a></p>
   </div>
 </div>
 <header class="top">
@@ -707,6 +719,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     <button type="button" id="nav-places">จัดวัด-ตำบลคณะสงฆ์</button>
     <button type="button" id="nav-users" hidden>ผู้ใช้</button>
     <span class="who" id="whoami"></span>
+    <a class="ghost" href="https://wat-accounting.onrender.com/hub">กลับเมนูหลัก</a>
     <button type="button" class="ghost" id="btn-logout" hidden>ออกจากระบบ</button>
   </nav>
 </header>
@@ -781,6 +794,7 @@ body.places-on .nav button.on { background: #fff; color: #0f766e; border-color: 
     <button type="button" class="ghost" id="btn-xlsx-load">โหลดจาก Excel / Load from Excel</button>
     <input id="xlsx-import" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
     <button type="button" class="ghost" id="btn-new">เพิ่มรายชื่อ</button>
+    <a class="ghost" href="https://wat-accounting.onrender.com/hub" style="display:inline-block;text-decoration:none;border-radius:10px;line-height:1.2">กลับเมนูหลัก</a>
   </div>
   <p class="stats" id="stats"></p>
   <div id="list"></div>
