@@ -5757,7 +5757,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   $("nav-users").onclick = function () { showUsers(); };
   $("btn-logout").onclick = async function () {
     try { await api("/logout", { method: "POST", body: "{}" }); } catch (e) {}
-    showLogin();
+    location.replace("https://wat-accounting.onrender.com/hub");
   };
   $("login-form").onsubmit = async function (ev) {
     ev.preventDefault();

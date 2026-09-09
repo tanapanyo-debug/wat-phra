@@ -164,6 +164,10 @@ eq(html.indexOf('id="btn-goto-signup" hidden') >= 0, true, "signup button hidden
 eq(html.indexOf("btn-register-toggle") >= 0, true, "admin can open register");
 eq((html.match(/กลับเมนูหลัก/g) || []).length >= 3, true, "กลับเมนูหลัก on login, nav, list");
 eq(html.indexOf('href="https://wat-accounting.onrender.com/hub"') >= 0, true, "กลับเมนูหลัก goes to hub");
+const logoutClick = html.slice(html.indexOf("$(\"btn-logout\").onclick"), html.indexOf("};", html.indexOf("$(\"btn-logout\").onclick")) + 2);
+eq(logoutClick.indexOf("api(\"/logout\"") >= 0, true, "logout calls api");
+eq(logoutClick.indexOf("location.replace(\"https://wat-accounting.onrender.com/hub\")") >= 0, true, "logout goes to hub");
+eq(logoutClick.indexOf("showLogin()") < 0, true, "logout still shows monk login");
 
 const { thaiPlaceName, watAlias } = require("./lib/formExcelImport");
 eq(watAlias("Wat Intharam"), "วัดอินทาราม", "alias intharam");
