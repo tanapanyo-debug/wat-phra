@@ -6,8 +6,12 @@ const { displayName, displayNameAt } = require("./lib/names");
 const { SAMANASAK, SAMANASAK_CLASS, SAMANASAK_GROUPS, THANANAMA, isThananukromAction, isThananukromEntry } = require("./lib/samanasak");
 const { courseOut, ensureCourses, thaiDigits, normalizeCourseKind } = require("./lib/courses");
 const { destWat, lastAffiliation, affHomeWat, sameWatName, homeRainPlace, statusFromLastAffiliation, movedStatusLabel, parseIll, parseIllBedridden, parseIllPlace, monkIsIll, canonicalStatus, statusFilterClause } = require("./lib/affStatus");
-const { ensureDuties, listEvents, addEvent, deleteEvent, listDaily, saveDaily, listMonth } = require("./lib/duties");
+const { ensureDuties, listEvents, addEvent, deleteEvent, listDaily, saveDaily, listMonth,
+  listRoster, listCatalog, addWork, renameWork, deleteWork, addAct, renameAct, deleteAct } = require("./lib/duties");
+const { ensureScholarships, listScholarships, addScholarship, deleteScholarship } = require("./lib/scholarships");
 const { headerLines, detectLevel, formRow } = require("./lib/rainsReport");
+const { buildRainsReportXlsx } = require("./lib/rainsReportXlsx");
+const { sortLikeReport } = require("./lib/reportSort");
 const { currentBe, isNovice, personTypeAt, ordainedYearBe, vassaFor, ageAt, toParts } = require("./lib/vassa");
 const { pickRain, carrySourceSql, RAIN_KIND_PENDING, isPendingRainKind } = require("./lib/rainPick");
 const { buildFormBlankXlsx } = require("./lib/formBlankXlsx");
@@ -474,6 +478,7 @@ async function ensureSchema() {
   await ensureTempleDir(pool);
   await ensureAuthSchema(pool);
   await ensureDuties(pool);
+  await ensureScholarships(pool);
   await ensureRainYearLockSchema(pool);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS monk_affiliations (
@@ -1075,6 +1080,13 @@ app.get("/api/duties/events", async (req, res) => {
     sendErr(res, e, "อ่านบันทึกศาสนกิจไม่สำเร็จ");
   }
 });
+app.get("/api/duties/roster", async (req, res) => {
+  try {
+    res.json(await listRoster(pool, req.user, req.query || {}));
+  } catch (e) {
+    sendErr(res, e, "อ่านรายชื่อพระไม่สำเร็จ");
+  }
+});
 app.post("/api/duties/events", async (req, res) => {
   try {
     const row = await addEvent(pool, req.user, req.body || {});
@@ -1088,6 +1100,55 @@ app.delete("/api/duties/events/:id", async (req, res) => {
     res.json(await deleteEvent(pool, req.user, req.params.id));
   } catch (e) {
     sendErr(res, e, "ลบรายการไม่สำเร็จ");
+  }
+});
+app.get("/api/duties/catalog", async (req, res) => {
+  try {
+    res.json(await listCatalog(pool, req.user, req.query || {}));
+  } catch (e) {
+    sendErr(res, e, "อ่านรายการงานไม่สำเร็จ");
+  }
+});
+app.post("/api/duties/catalog/works", async (req, res) => {
+  try {
+    res.json({ row: await addWork(pool, req.user, req.body || {}) });
+  } catch (e) {
+    sendErr(res, e, "เพิ่มงานไม่สำเร็จ");
+  }
+});
+app.put("/api/duties/catalog/works/:id", async (req, res) => {
+  try {
+    res.json({ row: await renameWork(pool, req.user, req.params.id, req.body || {}) });
+  } catch (e) {
+    sendErr(res, e, "แก้ชื่องานไม่สำเร็จ");
+  }
+});
+app.delete("/api/duties/catalog/works/:id", async (req, res) => {
+  try {
+    res.json(await deleteWork(pool, req.user, req.params.id));
+  } catch (e) {
+    sendErr(res, e, "ลบงานไม่สำเร็จ");
+  }
+});
+app.post("/api/duties/catalog/acts", async (req, res) => {
+  try {
+    res.json({ row: await addAct(pool, req.user, req.body || {}) });
+  } catch (e) {
+    sendErr(res, e, "เพิ่มลักษณะงานไม่สำเร็จ");
+  }
+});
+app.put("/api/duties/catalog/acts/:id", async (req, res) => {
+  try {
+    res.json({ row: await renameAct(pool, req.user, req.params.id, req.body || {}) });
+  } catch (e) {
+    sendErr(res, e, "แก้ลักษณะงานไม่สำเร็จ");
+  }
+});
+app.delete("/api/duties/catalog/acts/:id", async (req, res) => {
+  try {
+    res.json(await deleteAct(pool, req.user, req.params.id));
+  } catch (e) {
+    sendErr(res, e, "ลบลักษณะงานไม่สำเร็จ");
   }
 });
 app.get("/api/duties/daily", async (req, res) => {
@@ -1109,6 +1170,28 @@ app.get("/api/duties/month", async (req, res) => {
     res.json(await listMonth(pool, req.user, req.query || {}));
   } catch (e) {
     sendErr(res, e, "อ่านรายงานทำวัตรไม่สำเร็จ");
+  }
+});
+app.get("/api/scholarships", async (req, res) => {
+  try {
+    res.json(await listScholarships(pool, req.user, req.query || {}));
+  } catch (e) {
+    sendErr(res, e, "อ่านทะเบียนทุนไม่สำเร็จ");
+  }
+});
+app.post("/api/scholarships", async (req, res) => {
+  try {
+    const row = await addScholarship(pool, req.user, req.body || {});
+    res.json({ row });
+  } catch (e) {
+    sendErr(res, e, "บันทึกผู้รับทุนไม่สำเร็จ");
+  }
+});
+app.delete("/api/scholarships/:id", async (req, res) => {
+  try {
+    res.json(await deleteScholarship(pool, req.user, req.params.id));
+  } catch (e) {
+    sendErr(res, e, "ลบรายการไม่สำเร็จ");
   }
 });
 app.post("/api/me/request-level", async (req, res) => {
@@ -1767,8 +1850,7 @@ app.post("/api/rains/year-lock", async (req, res) => {
   }
 });
 
-app.get("/api/report", async (req, res) => {
-  try {
+async function reportData(req) {
     const q = searchQ(req.query.q);
     const yearBe = intOrNull(req.query.yearBe, 2400, 2700);
     const tambon = str(req.query.tambon, 80);
@@ -1833,12 +1915,12 @@ app.get("/api/report", async (req, res) => {
            AND ($7 = '' OR COALESCE(NULLIF(pw.province,''), m.province) = $7)
          ORDER BY ${sanghaExprM}, CASE WHEN COALESCE(m.person_type, 'ภิกษุ') = 'สามเณร' THEN 1 ELSE 0 END, m.wat_name, m.chaya, m.id`;
     if (adminNeedsPlacePick(req.user, { q, watName, sanghaTambon, district, province, unmatched })) {
-      return res.json({
+      return {
         yearBe: yearBe || null, total: 0, monks: 0, novices: 0,
         tambons: [], sanghaTambons: [], wats: [],
         rankCounts: {}, statusCounts: {}, rainsHeader: {}, yearLock: null,
         rows: [], needPlace: true
-      });
+      };
     }
     const yearParams = [q, yearBe, tambon, district, unmatched ? "" : sanghaTambon, watName, unmatched ? 1 : 0, statusWanted, province];
     const allParams = [q, tambon, district, sanghaTambon, watName, statusWanted, province];
@@ -1921,13 +2003,48 @@ app.get("/api/report", async (req, res) => {
     const yearLock = yearBe
       ? await yearLockStatus(pool, req.user, yearBe, watName, unmatched ? "" : sanghaTambon)
       : null;
-    res.json({
+    return {
       yearBe: yearBe || null, total: rows.length, monks, novices, tambons, sanghaTambons, wats,
       rankCounts, statusCounts, rainsHeader, yearLock, rows
-    });
+    };
+}
+
+app.get("/api/report", async (req, res) => {
+  try {
+    res.json(await reportData(req));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "อ่านรายงานไม่สำเร็จ" });
+  }
+});
+
+app.get("/api/report.xlsx", async (req, res) => {
+  try {
+    const data = await reportData(req);
+    if (data.needPlace) return res.status(400).json({ error: "เลือกจังหวัดหรืออำเภอก่อน" });
+    if (!data.yearBe) return res.status(400).json({ error: "เลือกปีจำพรรษาก่อน" });
+    const list = sortLikeReport((data.rows || []).filter(function (m) {
+      return !isPendingRainKind(m.rainKindYear);
+    }));
+    if (!list.length) {
+      return res.status(400).json({ error: "ยังไม่มีรายชื่อจำพรรษาในปี " + data.yearBe });
+    }
+    const monks = list.filter(function (m) { return m.personType !== "สามเณร"; }).length;
+    const buf = buildRainsReportXlsx({
+      header: data.rainsHeader || {},
+      rows: list.map(function (m) { return m.rainsForm || {}; }),
+      monks: monks,
+      novices: list.length - monks,
+      yearBe: data.yearBe
+    });
+    const ascii = "rains-" + data.yearBe + ".xlsx";
+    const thai = encodeURIComponent("บัญชีจำพรรษา-" + data.yearBe + ".xlsx");
+    res.set("Cache-Control", "no-store");
+    res.set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.set("Content-Disposition", 'attachment; filename="' + ascii + '"; filename*=UTF-8\'\'' + thai);
+    res.send(buf);
+  } catch (e) {
+    sendErr(res, e, "สร้างไฟล์ Excel ไม่สำเร็จ");
   }
 });
 

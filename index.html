@@ -431,13 +431,15 @@ body.embed .top small { display: block; }
 body.duties-only #nav-list,
 body.duties-only #nav-places,
 body.duties-only #nav-users,
+body.duties-only #nav-fund,
 body.duties-only #page-list,
 body.duties-only #dlg,
 body.duties-only #page-places,
 body.duties-only #page-users,
+body.duties-only #page-fund,
 body.duties-only #level-request-box { display: none !important; }
   @media print {
-  .top, .nav, .bar, .list-tools, #page-places, #page-users, #page-duties, #page-login { display: none !important; }
+  .top, .nav, .bar, .list-tools, #page-places, #page-users, #page-duties, #page-fund, #page-login { display: none !important; }
   body:not(.print-data) #dlg { display: none !important; }
   body.print-data #page-list { display: none !important; }
   body.print-rains #page-list,
@@ -445,6 +447,7 @@ body.duties-only #level-request-box { display: none !important; }
   body.print-rains #page-places,
   body.print-rains #page-users,
   body.print-rains #page-duties,
+  body.print-rains #page-fund,
   body.print-rains #dlg,
   body.print-rains #duty-month-report,
   body.print-rains .rains-toolbar { display: none !important; }
@@ -453,6 +456,7 @@ body.duties-only #level-request-box { display: none !important; }
   body.print-duty #page-places,
   body.print-duty #page-users,
   body.print-duty #page-duties,
+  body.print-duty #page-fund,
   body.print-duty #dlg,
   body.print-duty #rains-report,
   body.print-duty .rains-toolbar { display: none !important; }
@@ -611,6 +615,7 @@ body.need-login #page-list,
 body.need-login #page-places,
 body.need-login #page-users,
 body.need-login #page-duties,
+body.need-login #page-fund,
 body.need-login #rains-report,
 body.need-login #duty-month-report,
 body.need-login #dlg { display: none !important; }
@@ -632,6 +637,7 @@ body.rains-open #page-list,
 body.rains-open #page-places,
 body.rains-open #page-users,
 body.rains-open #page-duties,
+body.rains-open #page-fund,
 body.rains-open #duty-month-report,
 body.rains-open #dlg { display: none !important; }
 #duty-month-report {
@@ -649,6 +655,7 @@ body.duty-report-open #page-list,
 body.duty-report-open #page-places,
 body.duty-report-open #page-users,
 body.duty-report-open #page-duties,
+body.duty-report-open #page-fund,
 body.duty-report-open #rains-report,
 body.duty-report-open #dlg { display: none !important; }
 #duty-month-report-body {
@@ -782,18 +789,26 @@ table.rains-sheet td.chaya {
   min-height: 44px;
   font-weight: 700;
 }
-#page-duties .card { padding: 16px; }
-#page-duties label { display: block; font-size: 12px; color: var(--muted); margin: 0 0 4px; }
-#page-duties .duty-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin: 0 0 12px; }
-#page-duties .duty-grid .wide { grid-column: 1 / -1; }
-#page-duties input, #page-duties select, #page-duties textarea {
+#page-duties .duty-pick-btns { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+#page-duties .card, #page-fund .card { padding: 16px; }
+#page-duties label, #page-fund label { display: block; font-size: 12px; color: var(--muted); margin: 0 0 4px; }
+#page-duties .duty-grid, #page-fund .duty-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin: 0 0 12px; }
+#page-duties .duty-grid .wide, #page-fund .duty-grid .wide { grid-column: 1 / -1; }
+#page-duties input, #page-duties select, #page-duties textarea,
+#page-fund input, #page-fund select, #page-fund textarea {
   width: 100%;
   padding: 9px 11px;
   border: 1px solid var(--line);
   border-radius: 10px;
   font: inherit;
 }
-#page-duties textarea { min-height: 64px; resize: vertical; }
+#page-duties textarea, #page-fund textarea { min-height: 64px; resize: vertical; }
+#page-fund .fund-sum { margin: 10px 0 0; font-weight: 700; color: var(--teal-d); }
+#page-fund .fund-block { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+#page-fund .fund-school { font-weight: 700; }
+#page-fund .fund-place { font-size: 13px; color: var(--muted); margin: 2px 0 6px; }
+#page-fund .fund-line { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; margin: 4px 0; }
+#page-fund .fund-line span { font-size: 14px; }
 #page-duties .leave-in { margin-top: 6px; }
 #page-duties td.attend { min-width: 9em; vertical-align: top; }
 #page-duties td.exempt { width: 8em; vertical-align: top; white-space: nowrap; }
@@ -889,8 +904,8 @@ table.duty-sheet col.c-note { width: 24%; }
   .duty-times { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 720px) {
-  #page-duties .card { padding: 12px; }
-  #page-duties { padding-bottom: 88px; }
+  #page-duties .card, #page-fund .card { padding: 12px; }
+  #page-duties, #page-fund { padding-bottom: 88px; }
   #duty-daily-panel .duty-sticky {
     position: fixed;
     left: 0;
@@ -1144,6 +1159,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   <nav class="nav">
     <button type="button" class="on" id="nav-list">รายงานพระภิกษุ</button>
     <button type="button" id="nav-duties">ข้อมูลการปฏิบัติศาสนกิจ</button>
+    <button type="button" id="nav-fund">แจกทุนการศึกษา</button>
     <button type="button" id="nav-places">จัดวัด-ตำบลคณะสงฆ์</button>
     <button type="button" id="nav-users" hidden>ผู้ใช้</button>
     <span class="who" id="whoami"></span>
@@ -1252,6 +1268,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     <p class="msg" id="duty-err"></p>
     <div id="duty-need-wat" class="empty" hidden>เลือกวัดจากรายงานพระภิกษุก่อน จึงบันทึกได้</div>
     <div id="duty-event-panel" hidden>
+      <p class="hint">ผูกกับพระด้วยเลขบัตรประชาชน · ค่าเริ่มต้นเจ้าอาวาส · งานกับลักษณะงานเพิ่ม แก้ ลบได้</p>
       <div class="duty-grid">
         <div>
           <label>วันที่</label>
@@ -1259,12 +1276,54 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
           <input type="hidden" id="duty-event-iso">
         </div>
         <div class="wide">
-          <label>ข้อมูลงาน</label>
-          <input id="duty-event-title" maxlength="300" placeholder="เช่น ไปตรวจวัด">
+          <label>พระ</label>
+          <select id="duty-event-monk"></select>
+        </div>
+        <div>
+          <label>งานคณะสงฆ์</label>
+          <select id="duty-event-work"></select>
+          <div class="duty-pick-btns">
+            <button type="button" class="ghost tiny" id="btn-duty-work-add">เพิ่ม</button>
+            <button type="button" class="ghost tiny" id="btn-duty-work-edit">แก้</button>
+            <button type="button" class="ghost tiny" id="btn-duty-work-del">ลบ</button>
+          </div>
+        </div>
+        <div>
+          <label>ลักษณะงาน</label>
+          <select id="duty-event-act"></select>
+          <div class="duty-pick-btns">
+            <button type="button" class="ghost tiny" id="btn-duty-act-add">เพิ่ม</button>
+            <button type="button" class="ghost tiny" id="btn-duty-act-edit">แก้</button>
+            <button type="button" class="ghost tiny" id="btn-duty-act-del">ลบ</button>
+          </div>
+        </div>
+        <div class="wide" id="duty-event-topic-wrap">
+          <label id="duty-event-topic-lab">ชื่องาน / หัวข้อ</label>
+          <input id="duty-event-topic" maxlength="300" placeholder="เช่น ศีล 5 / หลักสูตรพระวิทยากร">
         </div>
         <div class="wide">
           <label>สถานที่</label>
-          <input id="duty-event-place" maxlength="200" placeholder="ชื่อวัด หรือสถานที่">
+          <input id="duty-event-place" maxlength="200" placeholder="ชื่อวัด โรงเรียน หรือสถานที่">
+        </div>
+        <div id="duty-event-people-wrap" hidden>
+          <label id="duty-event-people-lab">จำนวนคน / รูป</label>
+          <input id="duty-event-people" inputmode="numeric" maxlength="8" placeholder="เช่น 200">
+        </div>
+        <div id="duty-event-duration-wrap" hidden>
+          <label>ระยะเวลา</label>
+          <input id="duty-event-duration" maxlength="40" placeholder="เช่น 2 ชั่วโมง หรือ 3 วัน">
+        </div>
+        <div id="duty-event-size-wrap" hidden>
+          <label>ขนาด (กว้าง × ยาว × สูง)</label>
+          <input id="duty-event-size" maxlength="80" placeholder="เช่น กว้าง 9 ม. ยาว 13 ม. สูง 4 ม.">
+        </div>
+        <div id="duty-event-amount-wrap" hidden>
+          <label>จำนวนเงิน (บาท)</label>
+          <input id="duty-event-amount" inputmode="decimal" maxlength="16" placeholder="เช่น 120000">
+        </div>
+        <div class="wide">
+          <label>รายละเอียด</label>
+          <textarea id="duty-event-note" maxlength="400" placeholder="บันทึกเพิ่ม ถ้ามี"></textarea>
         </div>
       </div>
       <div class="bar">
@@ -1307,10 +1366,56 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     </div>
   </div>
 </main>
+<main class="wrap" id="page-fund" hidden>
+  <div class="card">
+    <h2 style="margin:0 0 6px;font-size:1.15rem">แจกทุนการศึกษา</h2>
+    <p class="hint" style="margin:0 0 12px">ผูกกับพระด้วยเลขบัตรประชาชน · ค่าเริ่มต้นเจ้าอาวาส · ปี โรงเรียน จำนวนทุน และทุนละ</p>
+    <p class="msg" id="fund-err"></p>
+    <div id="fund-need-wat" class="empty" hidden>เลือกวัดจากรายงานพระภิกษุก่อน จึงบันทึกได้</div>
+    <div id="fund-panel">
+      <div class="duty-grid">
+        <div>
+          <label>พ.ศ.</label>
+          <input id="fund-year" inputmode="numeric" maxlength="4">
+        </div>
+        <div class="wide">
+          <label>พระ</label>
+          <select id="fund-monk"></select>
+        </div>
+        <div class="wide">
+          <label>หัวข้อ</label>
+          <input id="fund-title" maxlength="300" placeholder="เช่น แจกทุนการศึกษาสงเคราะห์นักเรียนชั้นประถมศึกษาและมัธยมศึกษา">
+        </div>
+        <div class="wide">
+          <label>โรงเรียน / สถานศึกษา</label>
+          <input id="fund-school" maxlength="300" placeholder="เช่น โรงเรียนเทศบาลวัดแม่นางปลื้ม หรือ มทร.สุวรรณภูมิ คณะศิลปศาสตร์">
+        </div>
+        <div class="wide">
+          <label>ที่ตั้ง</label>
+          <input id="fund-place" maxlength="300" placeholder="ตำบล อำเภอ จังหวัด — ถ้ามี">
+        </div>
+        <div>
+          <label>จำนวนทุน</label>
+          <input id="fund-count" inputmode="numeric" maxlength="8" placeholder="เช่น 90">
+        </div>
+        <div>
+          <label>ทุนละ (บาท)</label>
+          <input id="fund-each" inputmode="decimal" maxlength="16" placeholder="เช่น 500">
+        </div>
+      </div>
+      <div class="bar">
+        <button type="button" class="btn" id="btn-fund-save">บันทึกทุน</button>
+      </div>
+      <p class="fund-sum" id="fund-sum" hidden></p>
+      <div id="fund-list"></div>
+    </div>
+  </div>
+</main>
 <div id="rains-report">
   <div class="rains-toolbar">
     <span class="lvl" id="rains-level"></span>
     <button type="button" class="btn" id="btn-rains-print">พิมพ์</button>
+    <button type="button" class="ghost" id="btn-rains-xlsx">บันทึก Excel</button>
     <button type="button" class="ghost" id="btn-rains-close">ปิด</button>
   </div>
   <div id="rains-report-body"></div>
@@ -1870,7 +1975,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
           <div id="sanghapos-view" class="view-stack tone-violet"></div>
           <button type="button" class="ghost tiny" id="btn-sanghapos-edit">แก้ไขประวัติตำแหน่งคณะสงฆ์</button>
           <div id="sanghapos-edit" hidden>
-            <p class="hint">ปกครองและสนองงาน (เลขานุการรองเจ้าคณะตำบล / เลขานุการเจ้าคณะตำบล ฯลฯ) เก็บทีละครั้ง · ตำบลกรอกตำบล เขต อำเภอ</p>
+            <p class="hint">ปกครอง เลขานุการ และกรรมการทั้ง 6 ฝ่าย เก็บทีละครั้ง · ตำบลกรอกตำบล เขต อำเภอ · ไม่ใช่ทะเบียนอาคาร</p>
             <div id="sanghapos-list"></div>
             <button type="button" class="ghost tiny" id="btn-sanghapos-add">+ ตำแหน่งคณะสงฆ์</button>
             <div style="margin-top:10px">
@@ -1998,12 +2103,31 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
 </div>
 <script>
 (function () {
+  let lastRainsReportQs = null;
   const embedQs = new URLSearchParams(location.search);
   const embedOn = embedQs.get("embed") === "1";
   const embedTok = embedQs.get("t") || "";
   const embedFrame = embedOn && window.self !== window.top;
   if (embedOn) document.body.classList.add("embed");
   if (embedOn && !embedFrame) document.body.classList.add("embed-page");
+  function parentOrigin() {
+    try {
+      if (document.referrer) return new URL(document.referrer).origin;
+    } catch (e) {}
+    return "*";
+  }
+  function pingParent(event) {
+    if (!embedFrame) return;
+    try {
+      parent.postMessage({ source: "wat-phra", event: event || "alive" }, parentOrigin());
+    } catch (e) {}
+  }
+  if (embedFrame) {
+    setInterval(function () { pingParent("alive"); }, 30000);
+    ["click", "keydown", "touchstart"].forEach(function (ev) {
+      document.addEventListener(ev, function () { pingParent("alive"); }, { passive: true });
+    });
+  }
   const $ = (id) => document.getElementById(id);
   let rows = [];
   let rainEditYear = 0;
@@ -2081,6 +2205,244 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     "การสาธารณสงเคราะห์"
   ];
   const SIX_OTHER = "__other__";
+  const DUTY_WORKS = [
+    { id: "งานปกครอง", acts: ["ไปตรวจวัด", "ประชุมคณะสงฆ์", "งานสารบรรณ", "อื่นๆ"] },
+    { id: "งานศึกษา", acts: ["สอนนักธรรม-บาลี", "อบรมก่อนสอบ", "สอนศีลธรรมในโรงเรียน", "เข้ารับการอบรม", "อื่นๆ"] },
+    { id: "งานเผยแผ่", acts: ["ไปบรรยาย", "เป็นวิทยากร", "ค่ายพุทธบุตร", "อบรมศีลธรรม", "เข้ารับการอบรม", "พิธีวันสำคัญ", "อื่นๆ"] },
+    { id: "งานสาธารณูปการ", acts: ["ก่อสร้างถาวรวัตถุ", "บูรณะปฏิสังขรณ์", "อื่นๆ"] },
+    { id: "งานสาธารณประโยชน์", acts: ["ช่วยเหลือประชาชน", "บริจาค", "เปิดสถานที่ให้ใช้", "อื่นๆ"] },
+    { id: "งานศึกษาสงเคราะห์", acts: ["อุปถัมภ์โครงการ", "โรงเรียนผู้สูงอายุ", "อื่นๆ"] },
+    { id: "งานเจ้าคณะ", acts: ["สนองงานเจ้าคณะ", "อื่นๆ"] },
+    { id: "งานพิเศษ", acts: ["อื่นๆ"] }
+  ];
+  function dutyFieldsFor(act, work) {
+    const a = String(act || "").trim();
+    const w = String(work || "").trim();
+    const f = { people: false, duration: false, amount: false, size: false };
+    if (["ไปบรรยาย", "เป็นวิทยากร", "ค่ายพุทธบุตร", "อบรมศีลธรรม", "พิธีวันสำคัญ", "สอนศีลธรรมในโรงเรียน"].indexOf(a) >= 0) {
+      f.people = true;
+      f.duration = true;
+    }
+    if (["เข้ารับการอบรม", "อบรมก่อนสอบ"].indexOf(a) >= 0) f.duration = true;
+    if (["ก่อสร้างถาวรวัตถุ", "บูรณะปฏิสังขรณ์"].indexOf(a) >= 0) {
+      f.amount = true;
+      f.size = true;
+    }
+    if (["ช่วยเหลือประชาชน", "บริจาค", "อุปถัมภ์โครงการ", "โรงเรียนผู้สูงอายุ"].indexOf(a) >= 0) {
+      f.people = a !== "โรงเรียนผู้สูงอายุ";
+      f.amount = true;
+    }
+    if (a && !f.people && !f.duration && !f.amount && !f.size) {
+      if (w === "งานเผยแผ่") {
+        f.people = true;
+        f.duration = true;
+      } else if (w === "งานสาธารณูปการ") {
+        f.amount = true;
+        f.size = true;
+      } else if (w === "งานสาธารณประโยชน์" || w === "งานศึกษาสงเคราะห์") {
+        f.amount = true;
+      }
+    }
+    return f;
+  }
+  function dutyTopicLabel(act) {
+    if (act === "ไปบรรยาย" || act === "เป็นวิทยากร") return "หัวข้อบรรยาย";
+    if (act === "เข้ารับการอบรม" || act === "อบรมก่อนสอบ") return "หลักสูตร";
+    if (act === "ก่อสร้างถาวรวัตถุ" || act === "บูรณะปฏิสังขรณ์") return "ชื่องาน / ถาวรวัตถุ";
+    if (act === "โรงเรียนผู้สูงอายุ") return "โครงการ / โรงเรียนผู้สูงอายุ";
+    if (act === "อุปถัมภ์โครงการ") return "โครงการ";
+    if (act === "พิธีวันสำคัญ") return "ชื่อพิธี";
+    return "ชื่องาน / หัวข้อ";
+  }
+  function catalogFromDefaults() {
+    return {
+      works: DUTY_WORKS.map(function (w, i) {
+        return {
+          id: -(i + 1),
+          name: w.id,
+          acts: (w.acts || []).filter(function (a) { return a && a !== "อื่นๆ"; }).map(function (a, j) {
+            return { id: -((i + 1) * 100 + j + 1), name: a };
+          })
+        };
+      })
+    };
+  }
+  let dutyCatalog = catalogFromDefaults();
+  function dutyAskName(title, current) {
+    const v = window.prompt(title, current || "");
+    if (v == null) return "";
+    return String(v).replace(/\s+/g, " ").trim();
+  }
+  function dutyWorkOf() {
+    const name = $("duty-event-work") && $("duty-event-work").value;
+    const works = dutyCatalog.works || [];
+    for (let i = 0; i < works.length; i++) {
+      if (works[i].name === name) return works[i];
+    }
+    return null;
+  }
+  function dutyActSelected() {
+    const actEl = $("duty-event-act");
+    if (!actEl || !actEl.value) return null;
+    const w = dutyWorkOf();
+    const acts = (w && w.acts) || [];
+    for (let i = 0; i < acts.length; i++) {
+      if (acts[i].name === actEl.value) return acts[i];
+    }
+    return null;
+  }
+  function fillDutyWorkSelect(keep) {
+    const work = $("duty-event-work");
+    if (!work) return;
+    const cur = keep || work.value || "";
+    const works = dutyCatalog.works || [];
+    work.innerHTML = '<option value="">เลือกงาน</option>' + works.map(function (w) {
+      return '<option value="' + esc(w.name) + '"' + (w.name === cur ? " selected" : "") + ">" + esc(w.name) + "</option>";
+    }).join("");
+    if (cur && work.value !== cur && works.length) {
+      work.value = works[0].name;
+    }
+  }
+  function fillDutyActSelect(keep) {
+    const actEl = $("duty-event-act");
+    if (!actEl) return;
+    const w = dutyWorkOf();
+    const acts = (w && w.acts) || [];
+    const cur = keep || actEl.value || "";
+    actEl.innerHTML = '<option value="">เลือกลักษณะงาน</option>' + acts.map(function (a) {
+      return '<option value="' + esc(a.name) + '"' + (a.name === cur ? " selected" : "") + ">" + esc(a.name) + "</option>";
+    }).join("");
+    if (cur && actEl.value !== cur) actEl.value = "";
+  }
+  async function loadDutyCatalog(keepWork, keepAct) {
+    const qs = dutyWatQs();
+    const fallback = catalogFromDefaults();
+    try {
+      const data = await api("/duties/catalog" + (qs ? "?" + qs : ""));
+      dutyNeedWat(!!data.needWat);
+      if (data.needWat) {
+        dutyCatalog = fallback;
+      } else if (data.works && data.works.length) {
+        dutyCatalog = { works: data.works };
+      } else {
+        dutyCatalog = fallback;
+      }
+      fillDutyWorkSelect(keepWork);
+      fillDutyActSelect(keepAct);
+      applyDutyEventFields();
+    } catch (e) {
+      dutyCatalog = fallback;
+      fillDutyWorkSelect(keepWork);
+      fillDutyActSelect(keepAct);
+      applyDutyEventFields();
+    }
+  }
+  function dutyCatalogBody(extra) {
+    return Object.assign({
+      watName: (me && me.watName) || ($("watName") && $("watName").value) || ""
+    }, extra || {});
+  }
+  async function addDutyWork() {
+    const name = dutyAskName("ชื่องานคณะสงฆ์ใหม่");
+    if (!name) return;
+    try {
+      await api("/duties/catalog/works", { method: "POST", body: JSON.stringify(dutyCatalogBody({ name: name })) });
+      await loadDutyCatalog(name, "");
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "เพิ่มงานไม่สำเร็จ";
+    }
+  }
+  async function editDutyWork() {
+    const w = dutyWorkOf();
+    if (!w) { if ($("duty-err")) $("duty-err").textContent = "เลือกงานก่อน"; return; }
+    const name = dutyAskName("แก้ชื่องานคณะสงฆ์", w.name);
+    if (!name || name === w.name) return;
+    try {
+      await api("/duties/catalog/works/" + w.id, { method: "PUT", body: JSON.stringify(dutyCatalogBody({ name: name })) });
+      await loadDutyCatalog(name, $("duty-event-act") && $("duty-event-act").value);
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "แก้ชื่องานไม่สำเร็จ";
+    }
+  }
+  async function delDutyWork() {
+    const w = dutyWorkOf();
+    if (!w) { if ($("duty-err")) $("duty-err").textContent = "เลือกงานก่อน"; return; }
+    if (!confirm("ลบ «" + w.name + "» ออกจากรายการ?\nรายการที่บันทึกแล้วไม่ถูกลบ")) return;
+    try {
+      await api("/duties/catalog/works/" + w.id, { method: "DELETE" });
+      await loadDutyCatalog("", "");
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "ลบงานไม่สำเร็จ";
+    }
+  }
+  async function addDutyAct() {
+    const w = dutyWorkOf();
+    if (!w) { if ($("duty-err")) $("duty-err").textContent = "เลือกงานคณะสงฆ์ก่อน"; return; }
+    const name = dutyAskName("ลักษณะงานใหม่ ของ" + w.name);
+    if (!name) return;
+    try {
+      await api("/duties/catalog/acts", {
+        method: "POST",
+        body: JSON.stringify(dutyCatalogBody({ workId: w.id, name: name }))
+      });
+      await loadDutyCatalog(w.name, name);
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "เพิ่มลักษณะงานไม่สำเร็จ";
+    }
+  }
+  async function editDutyAct() {
+    const w = dutyWorkOf();
+    const a = dutyActSelected();
+    if (!w || !a) { if ($("duty-err")) $("duty-err").textContent = "เลือกลักษณะงานก่อน"; return; }
+    const name = dutyAskName("แก้ลักษณะงาน", a.name);
+    if (!name || name === a.name) return;
+    try {
+      await api("/duties/catalog/acts/" + a.id, { method: "PUT", body: JSON.stringify(dutyCatalogBody({ name: name })) });
+      await loadDutyCatalog(w.name, name);
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "แก้ลักษณะงานไม่สำเร็จ";
+    }
+  }
+  async function delDutyAct() {
+    const w = dutyWorkOf();
+    const a = dutyActSelected();
+    if (!w || !a) { if ($("duty-err")) $("duty-err").textContent = "เลือกลักษณะงานก่อน"; return; }
+    if (!confirm("ลบ «" + a.name + "» ออกจากรายการ?\nรายการที่บันทึกแล้วไม่ถูกลบ")) return;
+    try {
+      await api("/duties/catalog/acts/" + a.id, { method: "DELETE" });
+      await loadDutyCatalog(w.name, "");
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "ลบลักษณะงานไม่สำเร็จ";
+    }
+  }
+  function fillDutyActList() {
+    fillDutyActSelect();
+  }
+  function applyDutyEventFields() {
+    const workEl = $("duty-event-work");
+    const actEl = $("duty-event-act");
+    if (!workEl || !actEl) return;
+    const act = String(actEl.value || "").trim();
+    const f = dutyFieldsFor(act, workEl.value);
+    const lab = $("duty-event-topic-lab");
+    if (lab) lab.textContent = dutyTopicLabel(act);
+    const topic = $("duty-event-topic");
+    if (topic) {
+      if (act === "ไปบรรยาย") topic.placeholder = "เช่น ศีล 5";
+      else if (act === "เข้ารับการอบรม") topic.placeholder = "เช่น หลักสูตรพระวิทยากร";
+      else topic.placeholder = "เช่น ศีล 5 / หลักสูตรพระวิทยากร";
+    }
+    const show = function (id, on) { const el = $(id); if (el) el.hidden = !on; };
+    show("duty-event-people-wrap", f.people);
+    show("duty-event-duration-wrap", f.duration);
+    show("duty-event-size-wrap", f.size);
+    show("duty-event-amount-wrap", f.amount);
+  }
+  function syncDutyEventFields() {
+    fillDutyWorkSelect();
+    fillDutyActList();
+    applyDutyEventFields();
+  }
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -2253,8 +2615,11 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
       $("nav-places").hidden = true;
       $("nav-users").hidden = true;
       if ($("nav-duties")) $("nav-duties").hidden = false;
+      if ($("nav-fund")) $("nav-fund").hidden = true;
       const sub = document.querySelector(".top small");
       if (sub) sub.textContent = "ใช้ได้เฉพาะปฏิบัติศาสนกิจ";
+    } else if ($("nav-fund")) {
+      $("nav-fund").hidden = false;
     }
   }
 
@@ -2269,7 +2634,8 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     $("page-places").hidden = true;
     $("page-users").hidden = true;
     if ($("page-duties")) $("page-duties").hidden = true;
-    ["nav-list", "nav-places", "nav-users", "nav-duties"].forEach(function (id) {
+    if ($("page-fund")) $("page-fund").hidden = true;
+    ["nav-list", "nav-places", "nav-users", "nav-duties", "nav-fund"].forEach(function (id) {
       if ($(id)) $(id).classList.remove("on");
     });
   }
@@ -2329,6 +2695,10 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   function dutyPicked(isoId) {
     const iso = ($(isoId) && $(isoId).value) || "";
     return { iso: iso, text: dutyFaceText(iso) };
+  }
+  function dutyFaceIdOf(isoId) {
+    if (isoId === "duty-daily-iso") return "duty-daily-face";
+    return "duty-event-face";
   }
   function fillDutyDatePicks() {
     const today = dutyIsoToday();
@@ -2419,9 +2789,10 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
       if (iso) {
         if (phraCalTarget) {
           phraCalTarget.value = iso;
-          const faceId = phraCalTarget.id === "duty-daily-iso" ? "duty-daily-face" : "duty-event-face";
+          const faceId = dutyFaceIdOf(phraCalTarget.id);
           setDutyIso(phraCalTarget.id, faceId, iso);
           if (phraCalTarget.id === "duty-daily-iso") loadDutyDaily();
+          if (phraCalTarget.id === "duty-event-iso") loadDutyRoster();
         }
         closePhraCal();
         return;
@@ -2441,9 +2812,10 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
         phraCalView = { y: p[0], m: p[1] };
         if (phraCalTarget) {
           phraCalTarget.value = today;
-          const faceId = phraCalTarget.id === "duty-daily-iso" ? "duty-daily-face" : "duty-event-face";
+          const faceId = dutyFaceIdOf(phraCalTarget.id);
           setDutyIso(phraCalTarget.id, faceId, today);
           if (phraCalTarget.id === "duty-daily-iso") loadDutyDaily();
+          if (phraCalTarget.id === "duty-event-iso") loadDutyRoster();
         }
         closePhraCal();
       }
@@ -2469,6 +2841,15 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     fillDutyDatePicks();
     setDutySub(dutySub);
   }
+  function showScholarships() {
+    if (isDutiesOnlyUser(me)) return showDuties();
+    hideAppPages();
+    $("page-fund").hidden = false;
+    if ($("nav-fund")) $("nav-fund").classList.add("on");
+    fillDutyDatePicks();
+    fillFundYear();
+    loadFundRoster();
+  }
   function setDutySub(which) {
     dutySub = which === "event" ? "event" : which === "report" ? "report" : "daily";
     if ($("duty-kind") && $("duty-kind").value !== dutySub) $("duty-kind").value = dutySub;
@@ -2479,7 +2860,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     }
     if ($("duty-lead")) {
       $("duty-lead").textContent = dutySub === "event"
-        ? "บันทึกงานที่ไปทำ เช่น ไปตรวจวัด"
+        ? "บันทึกตามงานคณะสงฆ์ เช่น ไปบรรยาย อบรม ก่อสร้าง — ใช้ทำประวัติขอสมณศักดิ์ได้"
         : dutySub === "report"
           ? "นับขาดทำวัตรเช้า–เย็นของเดือน แล้วคิดเป็น %"
           : "บันทึกทำวัตรเช้า–เย็นของพระในวัด";
@@ -2488,9 +2869,15 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     if ($("duty-daily-panel")) $("duty-daily-panel").hidden = dutySub !== "daily";
     if ($("duty-report-panel")) $("duty-report-panel").hidden = dutySub !== "report";
     if ($("duty-err")) $("duty-err").textContent = "";
-    if (dutySub === "event") loadDutyEvents();
+    if (dutySub === "event") {
+      fillDutyWorkSelect();
+      fillDutyActSelect();
+      loadDutyCatalog();
+      loadDutyRoster();
+    }
     else if (dutySub === "report") fillDutyReportPick();
     else loadDutyDaily();
+    if (embedFrame && dutySub === "daily") pingParent("duty-opened");
   }
   function dutyNeedWat(need) {
     if ($("duty-need-wat")) $("duty-need-wat").hidden = !need;
@@ -2504,24 +2891,86 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     if (!p.yearBe) return iso || "";
     return formatThaiDateParts(p.day, p.month, p.yearBe).text;
   }
+  function fillPersonSelect(elId, data, keep) {
+    const el = $(elId);
+    if (!el) return "";
+    const rows = (data && data.rows) || [];
+    const want = keep || el.value || (data && data.abbotCitizenId) || "";
+    el.innerHTML = '<option value="">เลือกพระ</option>' + rows.map(function (r) {
+      const id = r.citizenId || "";
+      const lab = (r.displayName || "พระ") + (r.abbot ? " · เจ้าอาวาส" : "") +
+        (id ? "" : " · ยังไม่มีเลขบัตร");
+      if (!id) return '<option value="" disabled>' + esc(lab) + "</option>";
+      return '<option value="' + esc(id) + '"' + (id === want ? " selected" : "") + ">" + esc(lab) + "</option>";
+    }).join("");
+    if (want && el.value !== want) {
+      const abbot = data && data.abbotCitizenId;
+      if (abbot) el.value = abbot;
+    }
+    return el.value || "";
+  }
+  function dutyRosterQs(yearBe) {
+    const qs = dutyWatQs();
+    const parts = [];
+    if (qs) parts.push(qs);
+    if (yearBe) parts.push("yearBe=" + encodeURIComponent(yearBe));
+    return parts.length ? ("?" + parts.join("&")) : "";
+  }
+  async function loadDutyRoster() {
+    const d = dutyPicked("duty-event-iso");
+    const keep = ($("duty-event-monk") && $("duty-event-monk").value) || "";
+    try {
+      const data = await api("/duties/roster" + dutyRosterQs() +
+        (d.iso ? ((dutyWatQs() ? "&" : "?") + "dutyDate=" + encodeURIComponent(d.iso)) : ""));
+      dutyNeedWat(!!data.needWat);
+      if (data.needWat) return;
+      fillPersonSelect("duty-event-monk", data, keep);
+      await loadDutyEvents();
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "โหลดรายชื่อพระไม่สำเร็จ";
+    }
+  }
+  async function loadFundRoster() {
+    fillFundYear();
+    const year = ($("fund-year") && $("fund-year").value) || "";
+    const keep = ($("fund-monk") && $("fund-monk").value) || "";
+    try {
+      const data = await api("/duties/roster" + dutyRosterQs(year));
+      fundNeedWat(!!data.needWat);
+      if (data.needWat) return;
+      fillPersonSelect("fund-monk", data, keep);
+      await loadScholarships();
+    } catch (e) {
+      if ($("fund-err")) $("fund-err").textContent = e.message || "โหลดรายชื่อพระไม่สำเร็จ";
+    }
+  }
   async function loadDutyEvents() {
     if ($("duty-err")) $("duty-err").textContent = "";
     const qs = dutyWatQs();
+    const cid = ($("duty-event-monk") && $("duty-event-monk").value) || "";
+    const extra = cid ? ("citizenId=" + encodeURIComponent(cid)) : "";
     try {
-      const data = await api("/duties/events" + (qs ? "?" + qs : ""));
+      const data = await api("/duties/events" + (qs ? "?" + qs + (extra ? "&" + extra : "") : (extra ? "?" + extra : "")));
       dutyNeedWat(!!data.needWat);
       if (data.needWat) return;
       const rows = data.rows || [];
       const box = $("duty-event-list");
       if (!box) return;
       if (!rows.length) {
-        box.innerHTML = '<div class="empty" style="margin-top:12px">ยังไม่มีรายการ</div>';
+        box.innerHTML = '<div class="empty" style="margin-top:12px">ยังไม่มีรายการของพระรูปนี้</div>';
         return;
       }
-      box.innerHTML = '<table class="rpt"><thead><tr><th>วันที่</th><th>ข้อมูลงาน</th><th>สถานที่</th><th></th></tr></thead><tbody>' +
+      box.innerHTML = '<table class="rpt"><thead><tr><th>วันที่</th><th>งาน</th><th>รายการ</th><th>สถานที่</th><th></th></tr></thead><tbody>' +
         rows.map(function (r) {
-          return "<tr><td>" + esc(fmtDutyDate(r.dutyDate, r.dateText)) + "</td><td>" + esc(r.title) + "</td><td>" +
-            esc(r.place || "") + '</td><td><button type="button" class="ghost tiny" data-duty-del="' + r.id + '">ลบ</button></td></tr>';
+          const bits = [r.actKind, r.topic || (!r.workKind ? r.title : "")].filter(Boolean);
+          if (r.people) bits.push(r.people + " คน");
+          if (r.duration) bits.push(r.duration);
+          if (r.amount) bits.push(r.amount + " บาท");
+          if (r.sizeText) bits.push(r.sizeText);
+          return "<tr><td>" + esc(fmtDutyDate(r.dutyDate, r.dateText)) + "</td><td>" +
+            esc(r.workKind || "—") + "</td><td>" + esc(bits.join(" · ") || r.title || "") +
+            "</td><td>" + esc(r.place || "") +
+            '</td><td><button type="button" class="ghost tiny" data-duty-del="' + r.id + '">ลบ</button></td></tr>';
         }).join("") + "</tbody></table>";
       box.querySelectorAll("[data-duty-del]").forEach(function (btn) {
         btn.onclick = function () { deleteDutyEvent(btn.getAttribute("data-duty-del")); };
@@ -2538,14 +2987,23 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
         method: "POST",
         body: JSON.stringify({
           watName: (me && me.watName) || ($("watName") && $("watName").value) || "",
+          citizenId: $("duty-event-monk") && $("duty-event-monk").value,
           dutyDate: d.iso,
           dateText: d.text,
-          title: $("duty-event-title").value,
-          place: $("duty-event-place").value
+          workKind: $("duty-event-work") && $("duty-event-work").value,
+          actKind: $("duty-event-act") && $("duty-event-act").value,
+          topic: $("duty-event-topic") && $("duty-event-topic").value,
+          place: $("duty-event-place").value,
+          people: $("duty-event-people") && $("duty-event-people").value,
+          duration: $("duty-event-duration") && $("duty-event-duration").value,
+          sizeText: $("duty-event-size") && $("duty-event-size").value,
+          amount: $("duty-event-amount") && $("duty-event-amount").value,
+          note: $("duty-event-note") && $("duty-event-note").value
         })
       });
-      $("duty-event-title").value = "";
-      $("duty-event-place").value = "";
+      ["duty-event-topic", "duty-event-place", "duty-event-people", "duty-event-duration", "duty-event-size", "duty-event-amount", "duty-event-note"].forEach(function (id) {
+        if ($(id)) $(id).value = "";
+      });
       await loadDutyEvents();
     } catch (e) {
       if ($("duty-err")) $("duty-err").textContent = e.message || "บันทึกไม่สำเร็จ";
@@ -2558,6 +3016,116 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
       await loadDutyEvents();
     } catch (e) {
       if ($("duty-err")) $("duty-err").textContent = e.message || "ลบไม่สำเร็จ";
+    }
+  }
+  function fillFundYear() {
+    if (!$("fund-year")) return;
+    if (!$("fund-year").value) $("fund-year").value = String(new Date().getFullYear() + 543);
+  }
+  function fmtBaht(n) {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return "0";
+    return x.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+  function fundNeedWat(need) {
+    if ($("fund-need-wat")) $("fund-need-wat").hidden = !need;
+    if ($("fund-panel")) $("fund-panel").hidden = !!need;
+  }
+  function groupFundRows(rows) {
+    const groups = [];
+    rows.forEach(function (r) {
+      const key = (r.school || "") + "\n" + (r.place || "");
+      let g = null;
+      for (let i = 0; i < groups.length; i++) {
+        if (groups[i].key === key) { g = groups[i]; break; }
+      }
+      if (!g) {
+        g = { key: key, school: r.school || "", place: r.place || "", title: r.title || "", rows: [] };
+        groups.push(g);
+      }
+      g.rows.push(r);
+    });
+    return groups;
+  }
+  async function loadScholarships() {
+    if ($("fund-err")) $("fund-err").textContent = "";
+    fillFundYear();
+    const qs = dutyWatQs();
+    const year = ($("fund-year") && $("fund-year").value) || "";
+    const cid = ($("fund-monk") && $("fund-monk").value) || "";
+    const extra = "yearBe=" + encodeURIComponent(year) + (cid ? "&citizenId=" + encodeURIComponent(cid) : "");
+    try {
+      const data = await api("/scholarships" + (qs ? "?" + qs + "&" + extra : "?" + extra));
+      fundNeedWat(!!data.needWat);
+      if (data.needWat) return;
+      const rows = data.rows || [];
+      const sum = $("fund-sum");
+      if (sum) {
+        if (!rows.length) {
+          sum.hidden = true;
+          sum.textContent = "";
+        } else {
+          sum.hidden = false;
+          sum.textContent = "พ.ศ. " + (data.yearBe || year) + " · รวม " + (data.grantCount || 0) + " ทุน · " + fmtBaht(data.totalAmount) + " บาท";
+        }
+      }
+      const box = $("fund-list");
+      if (!box) return;
+      if (!rows.length) {
+        box.innerHTML = '<div class="empty" style="margin-top:12px">ยังไม่มีทุนในปีนี้</div>';
+        return;
+      }
+      let title = "";
+      rows.forEach(function (r) { if (!title && r.title) title = r.title; });
+      const titleHtml = title ? '<p class="hint" style="margin:12px 0 0">' + esc(title) + "</p>" : "";
+      box.innerHTML = titleHtml + groupFundRows(rows).map(function (g) {
+        const place = g.place ? '<div class="fund-place">' + esc(g.place) + "</div>" : "";
+        const lines = g.rows.map(function (r) {
+          return '<div class="fund-line"><span>จำนวน ' + esc(String(r.grantCount)) +
+            " ทุน ๆ ละ " + esc(fmtBaht(r.amountEach)) + " บาท</span>" +
+            '<button type="button" class="ghost tiny" data-fund-del="' + r.id + '">ลบ</button></div>';
+        }).join("");
+        return '<div class="fund-block"><div class="fund-school">' + esc(g.school) + "</div>" +
+          place + lines + "</div>";
+      }).join("");
+      box.querySelectorAll("[data-fund-del]").forEach(function (btn) {
+        btn.onclick = function () { deleteScholarship(btn.getAttribute("data-fund-del")); };
+      });
+    } catch (e) {
+      if ($("fund-err")) $("fund-err").textContent = e.message || "โหลดไม่สำเร็จ";
+    }
+  }
+  async function saveScholarship() {
+    if ($("fund-err")) $("fund-err").textContent = "";
+    try {
+      await api("/scholarships", {
+        method: "POST",
+        body: JSON.stringify({
+          watName: (me && me.watName) || ($("watName") && $("watName").value) || "",
+          citizenId: $("fund-monk") && $("fund-monk").value,
+          yearBe: $("fund-year") && $("fund-year").value,
+          title: $("fund-title") && $("fund-title").value,
+          school: $("fund-school") && $("fund-school").value,
+          place: $("fund-place") && $("fund-place").value,
+          grantCount: $("fund-count") && $("fund-count").value,
+          amountEach: $("fund-each") && $("fund-each").value
+        })
+      });
+      ["fund-count", "fund-each"].forEach(function (id) {
+        if ($(id)) $(id).value = "";
+      });
+      await loadScholarships();
+    } catch (e) {
+      if ($("fund-err")) $("fund-err").textContent = e.message || "บันทึกไม่สำเร็จ";
+    }
+  }
+  async function deleteScholarship(id) {
+    if (!confirm("ลบรายการนี้?")) return;
+    try {
+      await api("/scholarships/" + id, { method: "DELETE" });
+      await loadScholarships();
+    } catch (e) {
+      if ($("fund-err")) $("fund-err").textContent = e.message || "ลบไม่สำเร็จ";
     }
   }
   function attendSeg(name, val) {
@@ -2679,6 +3247,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
           rows: rows
         })
       });
+      pingParent("duty-daily-saved");
       if (!(opts && opts.quiet)) {
         pulseDutySaveBtn(btn, true);
         await loadDutyDaily();
@@ -5347,7 +5916,20 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
         "เลขานุการรองเจ้าคณะภาค", "เลขานุการเจ้าคณะภาค"
       ]
     }
-  ];
+  ].concat([
+    "ปกครอง", "ศาสนศึกษา", "เผยแผ่",
+    "สาธารณูปการ", "สาธารณสงเคราะห์", "ศึกษาสงเคราะห์"
+  ].map(function (dept) {
+    return {
+      name: "ฝ่าย" + dept,
+      items: [
+        "ประธานฝ่าย" + dept,
+        "กรรมการฝ่าย" + dept,
+        "เลขานุการฝ่าย" + dept,
+        "ผู้ช่วยเลขานุการฝ่าย" + dept
+      ]
+    };
+  }));
   function sanghaPosAll() {
     return SANGHA_POS_GROUPS.reduce(function (all, g) { return all.concat(g.items); }, []);
   }
@@ -6629,6 +7211,13 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
       body + "</tbody></table>" +
       '<p class="rains-foot">รวมภิกษุ ' + monks + " รูป · สามเณร " + novices + " รูป · รวม " + list.length + " รูป</p>";
   }
+  function rainsReportQs(year) {
+    const qs = ["yearBe=" + encodeURIComponent(year), "status=" + encodeURIComponent("จำพรรษา")];
+    if ($("sanghaTambon").value === "(ยังไม่ระบุตำบลคณะสงฆ์)") qs.push("unmatched=1");
+    else if ($("sanghaTambon").value) qs.push("sanghaTambon=" + encodeURIComponent($("sanghaTambon").value));
+    if ($("watName").value) qs.push("watName=" + encodeURIComponent($("watName").value));
+    return qs;
+  }
   function closeRainsReport() {
     document.body.classList.remove("rains-open", "print-rains");
   }
@@ -6639,10 +7228,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
       $("yearBe").focus();
       return;
     }
-    const qs = ["yearBe=" + encodeURIComponent(year), "status=" + encodeURIComponent("จำพรรษา")];
-    if ($("sanghaTambon").value === "(ยังไม่ระบุตำบลคณะสงฆ์)") qs.push("unmatched=1");
-    else if ($("sanghaTambon").value) qs.push("sanghaTambon=" + encodeURIComponent($("sanghaTambon").value));
-    if ($("watName").value) qs.push("watName=" + encodeURIComponent($("watName").value));
+    const qs = rainsReportQs(year);
     try {
       const data = await api("/report?" + qs.join("&"));
       const list = sortReportRows(data.rows || []).filter(function (m) {
@@ -6652,12 +7238,47 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
         alert("ยังไม่มีรายชื่อจำพรรษาในปี " + year);
         return;
       }
+      lastRainsReportQs = qs;
       const header = data.rainsHeader || {};
       $("rains-level").textContent = (header.levelLabel || "ระดับอำเภอ") + " · ปี " + year;
       $("rains-report-body").innerHTML = buildRainsSheet(header, list, data);
       document.body.classList.add("rains-open");
     } catch (err) {
       alert(err.message || "สร้างรายงานไม่สำเร็จ");
+    }
+  }
+  function downloadNamedBlob(filename, blob) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      try { URL.revokeObjectURL(a.href); } catch (e) {}
+      try { if (a.parentNode) a.parentNode.removeChild(a); } catch (e) {}
+    }, 2000);
+  }
+  async function downloadRainsExcel() {
+    const year = $("yearBe").value;
+    const qs = lastRainsReportQs;
+    if (!year || !qs || !document.body.classList.contains("rains-open")) {
+      alert("กดดูรายงานจำพรรษาก่อน จึงบันทึก Excel ได้");
+      return;
+    }
+    try {
+      const headers = embedOn ? { "X-Phra-Embed": "1" } : {};
+      const res = await fetch("/api/report.xlsx?" + qs.join("&"), { credentials: "same-origin", headers: headers });
+      if (res.status === 401) {
+        showLogin();
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(function () { return {}; });
+        throw new Error(data.error || "บันทึก Excel ไม่สำเร็จ");
+      }
+      downloadNamedBlob("บัญชีจำพรรษา-" + year + ".xlsx", await res.blob());
+    } catch (err) {
+      alert(err.message || "บันทึก Excel ไม่สำเร็จ");
     }
   }
   $("btn-print").onclick = function () {
@@ -6804,6 +7425,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     carryRainsFrom(year ? year + 1 : 0);
   };
   $("btn-rains-close").onclick = function () { closeRainsReport(); };
+  $("btn-rains-xlsx").onclick = function () { downloadRainsExcel(); };
   $("btn-rains-print").onclick = function () {
     document.body.classList.add("print-rains");
     var done = function () {
@@ -6874,9 +7496,25 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   $("btn-new").onclick = function () { fill(null); };
   $("nav-list").onclick = function () { showList(); };
   $("nav-duties").onclick = function () { showDuties(); };
+  if ($("nav-fund")) $("nav-fund").onclick = function () { showScholarships(); };
+  if ($("btn-fund-save")) $("btn-fund-save").onclick = function () { saveScholarship(); };
+  if ($("fund-year")) $("fund-year").onchange = function () { loadFundRoster(); };
+  if ($("fund-monk")) $("fund-monk").onchange = function () { loadScholarships(); };
+  if ($("duty-event-monk")) $("duty-event-monk").onchange = function () { loadDutyEvents(); };
   $("nav-places").onclick = function () { showPlaces(); };
   $("nav-users").onclick = function () { showUsers(); };
   $("duty-kind").onchange = function () { setDutySub($("duty-kind").value); };
+  if ($("duty-event-work")) $("duty-event-work").onchange = function () {
+    fillDutyActSelect();
+    applyDutyEventFields();
+  };
+  if ($("duty-event-act")) $("duty-event-act").onchange = function () { applyDutyEventFields(); };
+  if ($("btn-duty-work-add")) $("btn-duty-work-add").onclick = addDutyWork;
+  if ($("btn-duty-work-edit")) $("btn-duty-work-edit").onclick = editDutyWork;
+  if ($("btn-duty-work-del")) $("btn-duty-work-del").onclick = delDutyWork;
+  if ($("btn-duty-act-add")) $("btn-duty-act-add").onclick = addDutyAct;
+  if ($("btn-duty-act-edit")) $("btn-duty-act-edit").onclick = editDutyAct;
+  if ($("btn-duty-act-del")) $("btn-duty-act-del").onclick = delDutyAct;
   $("btn-duty-event-save").onclick = function () { saveDutyEvent(); };
   $("btn-duty-daily-load").onclick = function () { loadDutyDaily(); };
   $("btn-duty-daily-save").onclick = function () { saveDutyDaily(); };

@@ -103,4 +103,29 @@ eq(form.wat, "พนัญเชิงวรวิหาร", "form wat without 
 eq(form.naktham, "เอก", "form naktham short");
 eq(form.remark, "จล.", "form remark prefers note code");
 
+const { buildRainsReportXlsx, HEADERS } = require("./lib/rainsReportXlsx");
+const { readWorkbook } = require("./lib/xlsxRead");
+const xlsx = buildRainsReportXlsx({
+  header: { line1: district.line1, line2: wat.line2, line3: district.line3 },
+  yearBe: 2568,
+  monks: 1,
+  novices: 0,
+  rows: [form]
+});
+eq(xlsx.slice(0, 2).toString("utf8"), "PK", "xlsx is a zip");
+const sheets = readWorkbook(xlsx);
+const rainSheet = sheets["จำพรรษา 2568"];
+if (!rainSheet || !rainSheet.length) {
+  console.error("FAIL rains xlsx sheet missing", Object.keys(sheets));
+  process.exit(1);
+}
+eq(rainSheet[0][0], district.line1, "xlsx title");
+eq(rainSheet[1][0], wat.line2, "xlsx place");
+eq(rainSheet[4][1], "ชื่อ", "xlsx name header");
+eq(rainSheet[4].length, HEADERS.length, "xlsx column count");
+eq(String(rainSheet[5][0]), "1", "xlsx row number");
+eq(rainSheet[5][1], form.name, "xlsx monk name");
+eq(rainSheet[5][2], form.chaya, "xlsx monk chaya");
+eq(String(rainSheet[5][4]), "81", "xlsx age as number");
+
 console.log("ok rains report headers");

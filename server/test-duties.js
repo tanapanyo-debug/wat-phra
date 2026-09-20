@@ -1,5 +1,6 @@
 const { parseKind, parseAttend, parseExempt, watOf, yearBeOfIso, isAwayDutyKind, isAwayForDuty,
-  monthMeta, countedLastDay, pct, sessionKind, tallyMonkMonth } = require("./lib/duties");
+  monthMeta, countedLastDay, pct, sessionKind, tallyMonkMonth, DUTY_WORKS, parseWorkKind, parseActKind,
+  dutyFieldsFor, dutyTopicLabel, composeDutyTitle, parsePeople, parseAmount, parseCitizenId } = require("./lib/duties");
 const fs = require("fs");
 const path = require("path");
 
@@ -79,5 +80,60 @@ const abbot = tallyMonkMonth(
 eq(abbot.morning.exempt, 1, "unsaved abbot day exempt");
 eq(abbot.morning.miss, 1, "abbot unchecked day can miss");
 eq(abbot.morning.duty, 1, "only non-exempt abbot days count");
+
+eq(DUTY_WORKS.length, 8, "six sangha works plus abbot and special");
+eq(DUTY_WORKS[2].id, "งานเผยแผ่", "propagate work");
+eq(parseWorkKind("งานเผยแผ่"), "งานเผยแผ่", "known work");
+eq(parseWorkKind("งานอบรมเยาวชน"), "งานอบรมเยาวชน", "custom work");
+eq(parseWorkKind(""), "", "empty work");
+eq(parseActKind("งานเผยแผ่", "ไปบรรยาย"), "ไปบรรยาย", "lecture act");
+eq(parseActKind("งานเผยแผ่", "ปาฐกถาธรรม"), "ปาฐกถาธรรม", "custom act allowed");
+eq(parseActKind("", "ไปบรรยาย"), "", "act needs work");
+eq(dutyFieldsFor("ไปบรรยาย").people, true, "lecture has people");
+eq(dutyFieldsFor("ไปบรรยาย").duration, true, "lecture has duration");
+eq(dutyFieldsFor("ก่อสร้างถาวรวัตถุ").amount, true, "build has money");
+eq(dutyFieldsFor("ก่อสร้างถาวรวัตถุ").size, true, "build has size");
+eq(dutyTopicLabel("ไปบรรยาย"), "หัวข้อบรรยาย", "lecture topic label");
+eq(composeDutyTitle("งานเผยแผ่", "ไปบรรยาย", "ศีล 5"), "งานเผยแผ่ · ไปบรรยาย · ศีล 5", "title join");
+eq(parsePeople("200"), 200, "people");
+eq(parseAmount("120,000"), 120000, "amount commas");
+eq(parseCitizenId("1-2345-67890-12-3"), "1234567890123", "citizen id digits");
+eq(parseCitizenId("๑๒๓๔๕๖๗๘๙๐๑๒๓"), "1234567890123", "citizen id thai digits");
+eq(src.indexOf("citizen_id TEXT NOT NULL DEFAULT ''") >= 0, true, "duty events store citizen id");
+eq(src.indexOf("ADD COLUMN IF NOT EXISTS work_kind") >= 0, true, "duty event work column");
+eq(src.indexOf("ADD COLUMN IF NOT EXISTS people") >= 0, true, "duty event people column");
+
+const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+eq(html.indexOf('id="duty-event-work"') >= 0, true, "work dropdown");
+eq(html.indexOf('id="duty-event-monk"') >= 0 && html.indexOf('id="fund-monk"') >= 0, true, "person pickers");
+eq(html.indexOf('id="duty-event-act"') >= 0, true, "act dropdown");
+eq(html.indexOf("ไปบรรยาย") >= 0, true, "lecture act");
+eq(html.indexOf("เข้ารับการอบรม") >= 0, true, "training act");
+eq(html.indexOf("id=\"duty-event-people\"") >= 0, true, "people field");
+eq(html.indexOf("id=\"duty-event-duration\"") >= 0, true, "duration field");
+eq(html.indexOf("function catalogFromDefaults") >= 0, true, "dropdowns start with default works");
+eq(html.indexOf('id="btn-duty-work-add"') >= 0 && html.indexOf('id="btn-duty-act-del"') >= 0, true, "work and act lists are editable");
+eq(src.indexOf("CREATE TABLE IF NOT EXISTS wat_duty_works") >= 0, true, "work catalog table");
+eq(src.indexOf("CREATE TABLE IF NOT EXISTS wat_duty_acts") >= 0, true, "act catalog table");
+
+const edu = DUTY_WORKS.find(function (w) { return w.id === "งานศึกษาสงเคราะห์"; });
+eq(!!edu, true, "welfare work exists");
+eq(edu.acts.indexOf("แจกทุนการศึกษา") < 0, true, "grants are not sangha-work history");
+eq(edu.acts.indexOf("อุปถัมภ์โครงการ") >= 0, true, "project support stays on duty events");
+
+const { parseYearBe, parseGrantCount, lineTotal } = require("./lib/scholarships");
+eq(parseYearBe("2569"), 2569, "year be");
+eq(parseYearBe("๒๕๖๗"), 2567, "year thai digits");
+eq(parseGrantCount("๙๐"), 90, "grant count thai");
+eq(parseGrantCount("120"), 120, "grant count");
+eq(lineTotal(90, 500), 45000, "90 x 500");
+eq(lineTotal(5, 10000), 50000, "5 x 10000");
+eq(html.indexOf('id="nav-fund"') >= 0, true, "grant menu");
+eq(html.indexOf('id="page-fund"') >= 0, true, "grant page");
+eq(html.indexOf('id="fund-count"') >= 0 && html.indexOf('id="fund-each"') >= 0, true, "count times amount fields");
+eq(html.indexOf("จำนวนทุน") >= 0 && html.indexOf("ทุนละ") >= 0, true, "pdf-style grant fields");
+eq(html.indexOf("ไม่เก็บในประวัติพระ") >= 0 || html.indexOf("เลขบัตรประชาชน") >= 0, true, "grants stay off monk bio and link by id");
+eq(html.indexOf('id="fund-recipient"') < 0, true, "no named recipient register");
+eq(html.indexOf('value="fund"') < 0, true, "grants not inside duty-kind");
 
 console.log("ok duties");
