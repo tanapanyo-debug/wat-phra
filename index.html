@@ -424,6 +424,8 @@ body.embed #nav-users,
 body.embed #level-request-box,
 body.embed #btn-goto-signup,
 body.embed #btn-logout { display: none !important; }
+body.embed.embed-page .hub-foot,
+body.embed.embed-page .nav > a.ghost { display: revert !important; }
 body.embed .top { padding: 10px 16px; }
 body.embed .top small { display: block; }
 body.duties-only #nav-list,
@@ -1999,7 +2001,9 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   const embedQs = new URLSearchParams(location.search);
   const embedOn = embedQs.get("embed") === "1";
   const embedTok = embedQs.get("t") || "";
+  const embedFrame = embedOn && window.self !== window.top;
   if (embedOn) document.body.classList.add("embed");
+  if (embedOn && !embedFrame) document.body.classList.add("embed-page");
   const $ = (id) => document.getElementById(id);
   let rows = [];
   let rainEditYear = 0;

@@ -190,6 +190,7 @@ eq(html.indexOf("#rains-report-body") >= 0 && html.indexOf("width: 345mm") >= 0,
 eq(html.indexOf("พิมพ์และไฟล์") >= 0, true, "print and files sit in overflow");
 eq(html.indexOf('href="https://wat-accounting.onrender.com/hub"') >= 0, true, "กลับเมนูหลัก goes to hub");
 eq(html.indexOf("body.embed #btn-logout") >= 0, true, "embed hides logout in accounting");
+eq(html.indexOf("embed-page") >= 0, true, "phone embed keeps back-to-hub");
 eq(html.indexOf("id=\"nav-duties\"") >= 0, true, "duty tab");
 eq(html.indexOf("id=\"duty-kind\"") >= 0, true, "duty kind dropdown");
 eq(html.indexOf(">ปฏิบัติศาสนกิจประจำวัน<") >= 0, true, "daily duty heading");
