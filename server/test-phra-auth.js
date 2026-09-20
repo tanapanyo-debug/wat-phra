@@ -263,6 +263,11 @@ eq(serverSrc.indexOf("frame-ancestors") >= 0, true, "accounting can iframe monks
 const { lockUserToWat, signPhraEmbed, verifyPhraEmbed } = require("./lib/phraEmbed");
 const embedTok = signPhraEmbed({ watName: "วัดอินทาราม", email: "a@b.c" }, "secret-a", 1000);
 eq(verifyPhraEmbed(embedTok, "secret-a", 2000).watName, "วัดอินทาราม", "embed ticket");
+eq(verifyPhraEmbed(embedTok, "secret-a", 2000).appScope, "all", "old ticket is full app");
+const dutiesTok = signPhraEmbed({ watName: "วัดอินทาราม", email: "a@b.c", appScope: "duties" }, "secret-a", 1000);
+eq(verifyPhraEmbed(dutiesTok, "secret-a", 2000).appScope, "duties", "duties ticket");
+const dutiesSess = signPhraEmbed({ watName: "วัดอินทาราม", email: "a@b.c", appScope: "duties" });
+eq(applyEmbedLock({ accessLevel: "admin", appScope: "all" }, { headers: { cookie: "phra_embed=" + dutiesSess, "x-phra-embed": "1" } }).appScope, "duties", "iframe duties from accounting");
 const embedAdmin = lockUserToWat({ accessLevel: "admin", watId: 9, watName: "" }, "วัดอินทาราม", 1);
 eq(embedAdmin.accessLevel, "wat", "embed admin becomes wat");
 eq(embedAdmin.watId, 1, "embed drops other wat id");

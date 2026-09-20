@@ -22,6 +22,10 @@ function b64url(buf) {
   return Buffer.from(buf).toString("base64url");
 }
 
+function parseEmbedAppScope(v) {
+  return String(v || "").trim().toLowerCase() === "duties" ? "duties" : "all";
+}
+
 function signPhraEmbed(payload, secret, now) {
   const key = secret == null ? embedSecret() : String(secret);
   if (!key) throw new Error("ยังไม่ได้ตั้ง PHRA_EMBED_SECRET");
@@ -32,7 +36,8 @@ function signPhraEmbed(payload, secret, now) {
     v: 1,
     watName,
     email: String((payload && payload.email) || "").trim().toLowerCase(),
-    exp
+    exp,
+    appScope: parseEmbedAppScope(payload && payload.appScope)
   };
   const data = b64url(JSON.stringify(body));
   const sig = crypto.createHmac("sha256", key).update(data).digest("base64url");
@@ -59,7 +64,8 @@ function verifyPhraEmbed(token, secret, now) {
   return {
     watName,
     email: String(body.email || "").trim().toLowerCase(),
-    exp: Number(body.exp)
+    exp: Number(body.exp),
+    appScope: parseEmbedAppScope(body.appScope)
   };
 }
 
@@ -83,13 +89,24 @@ function lockUserToWat(user, watName, watId) {
   });
 }
 
+function applyTicketAppScope(user, ticket) {
+  if (!user || !ticket) return user;
+  if (parseEmbedAppScope(ticket.appScope) !== "duties") return user;
+  return Object.assign({}, user, {
+    appScope: "duties",
+    appLabel: "เฉพาะปฏิบัติศาสนกิจ"
+  });
+}
+
 module.exports = {
   LOCAL_SECRET,
   EMBED_COOKIE,
   FRAME_ANCESTORS,
   embedSecret,
+  parseEmbedAppScope,
   signPhraEmbed,
   verifyPhraEmbed,
   sameWatName,
-  lockUserToWat
+  lockUserToWat,
+  applyTicketAppScope
 };

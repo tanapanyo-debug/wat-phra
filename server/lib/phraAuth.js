@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const { EMBED_COOKIE, signPhraEmbed, verifyPhraEmbed, lockUserToWat } = require("./phraEmbed");
+const { EMBED_COOKIE, signPhraEmbed, verifyPhraEmbed, lockUserToWat, applyTicketAppScope } = require("./phraEmbed");
 
 const LEVELS = ["wat", "tambon", "district", "province", "admin"];
 const ACCESS_LABEL = {
@@ -951,7 +951,7 @@ function applyEmbedLock(user, req) {
   if (locked && locked.embedMismatch) {
     throw deny(403, "บัญชีพระนี้ไม่ใช่วัดที่เปิดจากงานบุคคล");
   }
-  return locked;
+  return applyTicketAppScope(locked, embed);
 }
 
 function requireAuth(pool) {
@@ -979,7 +979,8 @@ async function acceptEmbed(pool, req, token) {
   const cookieTok = signPhraEmbed({
     watName,
     email: ticket.email,
-    exp: Date.now() + 8 * 60 * 60 * 1000
+    exp: Date.now() + 8 * 60 * 60 * 1000,
+    appScope: ticket.appScope
   });
   let user = await loadSession(pool, req);
   let sessionToken = "";
@@ -991,14 +992,14 @@ async function acceptEmbed(pool, req, token) {
     const row = r.rows[0];
     if (row && parseAccountStatus(row.status) === "approved") {
       const candidate = await enrichPublicUser(pool, publicUser(row));
-      const locked = lockUserToWat(candidate, watName, watId);
+      const locked = applyTicketAppScope(lockUserToWat(candidate, watName, watId), ticket);
       if (!locked.embedMismatch) {
         sessionToken = await createSession(pool, row.id);
         user = locked;
       }
     }
   } else if (user) {
-    user = lockUserToWat(user, watName, watId);
+    user = applyTicketAppScope(lockUserToWat(user, watName, watId), ticket);
     if (user.embedMismatch) throw deny(403, "บัญชีพระนี้ไม่ใช่วัดที่เปิดจากงานบุคคล");
   }
   return { cookieTok, sessionToken, user: user || null, watName, watId };
