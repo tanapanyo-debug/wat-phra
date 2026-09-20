@@ -954,11 +954,47 @@ function applyEmbedLock(user, req) {
   return applyTicketAppScope(locked, embed);
 }
 
+function embedGuestFromTicket(ticket, wat) {
+  const watName = clean((wat && wat.name) || (ticket && ticket.watName));
+  if (!ticket || !watName) return null;
+  const appScope = parseAppScope(ticket.appScope, "wat");
+  return {
+    id: null,
+    username: ticket.email || "",
+    email: ticket.email || "",
+    displayName: ticket.email || "งานบุคคล",
+    accessLevel: "wat",
+    accessLabel: ACCESS_LABEL.wat,
+    appScope,
+    appLabel: APP_SCOPE_LABEL[appScope] || APP_SCOPE_LABEL.all,
+    status: "approved",
+    pending: false,
+    watId: (wat && wat.id) || null,
+    watName,
+    sanghaTambon: (wat && wat.sangha_tambon) || "",
+    district: (wat && wat.district) || "",
+    province: (wat && wat.province) || "",
+    embedLocked: true,
+    embedGuest: true
+  };
+}
+
+async function userFromEmbedCookie(pool, req) {
+  if (!isEmbedRequest(req)) return null;
+  const embed = readEmbedPayload(req);
+  if (!embed) return null;
+  const wat = await lookupWat(pool, null, embed.watName);
+  const guest = embedGuestFromTicket(embed, wat);
+  if (!guest) return null;
+  return applyTicketAppScope(lockUserToWat(guest, guest.watName, guest.watId), embed);
+}
+
 function requireAuth(pool) {
   return async function (req, res, next) {
     if (isPublicApiPath(req.path)) return next();
     try {
-      const user = await loadSession(pool, req);
+      let user = await loadSession(pool, req);
+      if (!user) user = await userFromEmbedCookie(pool, req);
       if (!user) return res.status(401).json({ error: "กรุณาเข้าสู่ระบบ", login: true });
       req.user = applyEmbedLock(user, req);
       next();
@@ -1001,6 +1037,12 @@ async function acceptEmbed(pool, req, token) {
   } else if (user) {
     user = applyTicketAppScope(lockUserToWat(user, watName, watId), ticket);
     if (user.embedMismatch) throw deny(403, "บัญชีพระนี้ไม่ใช่วัดที่เปิดจากงานบุคคล");
+  }
+  if (!user) {
+    user = applyTicketAppScope(
+      lockUserToWat(embedGuestFromTicket(ticket, { id: watId, name: watName }), watName, watId),
+      ticket
+    );
   }
   return { cookieTok, sessionToken, user: user || null, watName, watId };
 }
@@ -1203,6 +1245,7 @@ module.exports = {
   isEmbedRequest,
   acceptEmbed,
   applyEmbedLock,
+  embedGuestFromTicket,
   appendViewScope,
   appendHomeScope,
   insertBeforeOrderBy,

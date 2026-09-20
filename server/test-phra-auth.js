@@ -24,6 +24,7 @@ const {
   ADMIN_HOME_WAT,
   pickAdminHomeWat,
   applyEmbedLock,
+  embedGuestFromTicket,
   isEmbedRequest,
   parseAppScope,
   isDutiesOnly,
@@ -277,6 +278,14 @@ eq(lockUserToWat({ accessLevel: "wat", watName: "วัดอื่น" }, "ว�
 const embedSess = signPhraEmbed({ watName: "วัดอินทาราม", email: "a@b.c" });
 eq(applyEmbedLock({ accessLevel: "admin" }, { headers: { cookie: "phra_embed=" + embedSess } }).accessLevel, "admin", "standalone ignores embed cookie");
 eq(applyEmbedLock({ accessLevel: "admin" }, { headers: { cookie: "phra_embed=" + embedSess, "x-phra-embed": "1" } }).accessLevel, "wat", "iframe still locks to one wat");
+const guest = embedGuestFromTicket({ watName: "วัดอินทาราม", email: "staff@temple.test", appScope: "duties" }, { id: 3, name: "วัดอินทาราม" });
+eq(guest.accessLevel, "wat", "ticket guest is wat only");
+eq(guest.id, null, "ticket guest is not a phra user row");
+eq(guest.embedGuest, true, "ticket guest flag");
+eq(guest.appScope, "duties", "ticket guest keeps duties-only");
+eq(canManagePlaces(guest), false, "ticket guest cannot manage places");
+eq(canManageUsers(guest), false, "ticket guest cannot manage users");
+eq(embedGuestFromTicket({ watName: "วัดอินทาราม", appScope: "all" }, null).accessLevel, "wat", "full ticket still wat");
 const logoutClick = html.slice(html.indexOf("$(\"btn-logout\").onclick"), html.indexOf("};", html.indexOf("$(\"btn-logout\").onclick")) + 2);
 eq(logoutClick.indexOf("api(\"/logout\"") >= 0, true, "logout calls api");
 eq(logoutClick.indexOf("location.replace(\"https://wat-accounting.onrender.com/hub\")") >= 0, true, "logout goes to hub");
