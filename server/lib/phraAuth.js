@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { EMBED_COOKIE, signPhraEmbed, verifyPhraEmbed, lockUserToWat } = require("./phraEmbed");
 
 const LEVELS = ["wat", "tambon", "district", "province", "admin"];
 const ACCESS_LABEL = {
@@ -7,6 +8,10 @@ const ACCESS_LABEL = {
   district: "อำเภอ",
   province: "จังหวัด",
   admin: "ผู้ดูแลแพลตฟอร์ม"
+};
+const APP_SCOPE_LABEL = {
+  all: "ทั้งหมด",
+  duties: "เฉพาะปฏิบัติศาสนกิจ"
 };
 const LEVEL_RANK = { wat: 1, tambon: 2, district: 3, province: 4, admin: 5 };
 const COOKIE = "phra_sid";
@@ -94,6 +99,32 @@ function verifyPassword(plain, stored) {
   return crypto.timingSafeEqual(got, want);
 }
 
+function parseAppScope(v, accessLevel) {
+  if (accessLevel && accessLevel !== "wat") return "all";
+  const s = String(v == null ? "" : v).trim().toLowerCase();
+  if (s === "duties" || s === "duty" || s === "ปฏิบัติศาสนกิจ" || s === "เฉพาะปฏิบัติศาสนกิจ" || s === "เฉพาะ") {
+    return "duties";
+  }
+  return "all";
+}
+
+function isDutiesOnly(user) {
+  return !!(user && user.appScope === "duties");
+}
+
+function isDutiesAllowedPath(p) {
+  const raw = String(p || "").split("?")[0];
+  const path = raw.replace(/^\/api(?=\/|$)/, "") || "/";
+  if (path === "/me" || path === "/logout" || path === "/me/request-level") return true;
+  return path.indexOf("/duties/") === 0;
+}
+
+function requireAppScope(req, res, next) {
+  if (!req.user || !isDutiesOnly(req.user)) return next();
+  if (isDutiesAllowedPath(req.path) || isDutiesAllowedPath(req.originalUrl)) return next();
+  return res.status(403).json({ error: "บัญชีนี้ใช้ได้เฉพาะปฏิบัติศาสนกิจ" });
+}
+
 function parseAccountStatus(v) {
   const s = clean(v).toLowerCase();
   if (s === "pending" || s === "rejected") return s;
@@ -110,6 +141,7 @@ function publicUser(row) {
   if (!row) return null;
   const accessLevel = parseAccessLevel(row.access_level) || "wat";
   const status = parseAccountStatus(row.status);
+  const appScope = parseAppScope(row.app_scope, accessLevel);
   return {
     id: row.id,
     username: row.username,
@@ -117,6 +149,8 @@ function publicUser(row) {
     displayName: row.display_name || "",
     accessLevel,
     accessLabel: ACCESS_LABEL[accessLevel] || accessLevel,
+    appScope,
+    appLabel: APP_SCOPE_LABEL[appScope] || APP_SCOPE_LABEL.all,
     status,
     pending: status === "pending",
     watId: row.wat_id || null,
@@ -148,22 +182,47 @@ function cookieSecure() {
   return !!process.env.RENDER || String(process.env.COOKIE_SECURE || "") === "1";
 }
 
-function setSessionCookie(res, token) {
-  const parts = [
-    COOKIE + "=" + token,
-    "HttpOnly",
-    "SameSite=Lax",
-    "Path=/",
-    "Max-Age=" + Math.floor(SESSION_MS / 1000)
-  ];
-  if (cookieSecure()) parts.push("Secure");
-  res.setHeader("Set-Cookie", parts.join("; "));
+function appendSetCookie(res, parts) {
+  const cur = res.getHeader("Set-Cookie");
+  const list = !cur ? [] : (Array.isArray(cur) ? cur.slice() : [String(cur)]);
+  list.push(parts.join("; "));
+  res.setHeader("Set-Cookie", list);
+}
+
+function cookieFlagParts(opts) {
+  const embed = !!(opts && opts.embed);
+  const maxAge = Number(opts && opts.maxAge);
+  const parts = ["HttpOnly", "Path=/", "Max-Age=" + (Number.isFinite(maxAge) ? maxAge : 0)];
+  if (embed && cookieSecure()) {
+    parts.push("SameSite=None", "Secure", "Partitioned");
+  } else {
+    parts.push("SameSite=Lax");
+    if (cookieSecure()) parts.push("Secure");
+  }
+  return parts;
+}
+
+function setSessionCookie(res, token, opts) {
+  appendSetCookie(res, [COOKIE + "=" + token].concat(cookieFlagParts({
+    embed: !!(opts && opts.embed),
+    maxAge: Math.floor(SESSION_MS / 1000)
+  })));
+}
+
+function setEmbedCookie(res, token) {
+  appendSetCookie(res, [EMBED_COOKIE + "=" + token].concat(cookieFlagParts({
+    embed: true,
+    maxAge: 8 * 60 * 60
+  })));
 }
 
 function clearSessionCookie(res) {
-  const parts = [COOKIE + "=", "HttpOnly", "SameSite=Lax", "Path=/", "Max-Age=0"];
-  if (cookieSecure()) parts.push("Secure");
-  res.setHeader("Set-Cookie", parts.join("; "));
+  appendSetCookie(res, [COOKIE + "="].concat(cookieFlagParts({ embed: false, maxAge: 0 })));
+  appendSetCookie(res, [EMBED_COOKIE + "="].concat(cookieFlagParts({ embed: true, maxAge: 0 })));
+}
+
+function readEmbedPayload(req) {
+  return verifyPhraEmbed(parseCookies(req)[EMBED_COOKIE]);
 }
 
 function p(params, value) {
@@ -356,11 +415,13 @@ function scopePlaces(user, data) {
 }
 
 function canManagePlaces(user) {
+  if (user && user.embedLocked) return false;
   const lv = user && user.accessLevel;
   return lv === "admin" || lv === "province" || lv === "district" || lv === "tambon";
 }
 
 function canManageUsers(user) {
+  if (user && user.embedLocked) return false;
   const lv = user && user.accessLevel;
   return lv === "admin" || lv === "province" || lv === "district";
 }
@@ -492,6 +553,7 @@ async function ensureAuthSchema(pool) {
   await pool.query(`ALTER TABLE phra_users ADD COLUMN IF NOT EXISTS requested_level TEXT NOT NULL DEFAULT ''`);
   await pool.query(`ALTER TABLE phra_users ADD COLUMN IF NOT EXISTS requested_at TIMESTAMPTZ`);
   await pool.query(`ALTER TABLE phra_users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'approved'`);
+  await pool.query(`ALTER TABLE phra_users ADD COLUMN IF NOT EXISTS app_scope TEXT NOT NULL DEFAULT 'all'`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS phra_password_resets (
       user_id INTEGER PRIMARY KEY REFERENCES phra_users(id) ON DELETE CASCADE,
@@ -845,7 +907,8 @@ function readUserBody(body, isCreate) {
     watName: clean(body && body.watName).slice(0, 160),
     sanghaTambon: clean(body && body.sanghaTambon).slice(0, 80),
     district: clean(body && body.district).slice(0, 80),
-    province: clean(body && body.province).slice(0, 80)
+    province: clean(body && body.province).slice(0, 80),
+    appScope: parseAppScope(body && (body.appScope || body.app_scope), accessLevel)
   };
   if (Number.isNaN(out.watId)) out.watId = null;
   if (accessLevel === "wat") {
@@ -872,8 +935,23 @@ function readUserBody(body, isCreate) {
 
 function isPublicApiPath(path) {
   return path === "/health" || path === "/status" || path === "/login" || path === "/register"
-    || path === "/forgot-password" || path === "/reset-password"
+    || path === "/forgot-password" || path === "/reset-password" || path === "/embed/accept"
     || path === "/temples/provinces" || path === "/temples/districts" || path === "/temples/in-place";
+}
+
+function isEmbedRequest(req) {
+  return String((req && req.headers && req.headers["x-phra-embed"]) || "").trim() === "1";
+}
+
+function applyEmbedLock(user, req) {
+  if (!isEmbedRequest(req)) return user;
+  const embed = readEmbedPayload(req);
+  if (!embed || !user) return user;
+  const locked = lockUserToWat(user, embed.watName);
+  if (locked && locked.embedMismatch) {
+    throw deny(403, "บัญชีพระนี้ไม่ใช่วัดที่เปิดจากงานบุคคล");
+  }
+  return locked;
 }
 
 function requireAuth(pool) {
@@ -882,12 +960,48 @@ function requireAuth(pool) {
     try {
       const user = await loadSession(pool, req);
       if (!user) return res.status(401).json({ error: "กรุณาเข้าสู่ระบบ", login: true });
-      req.user = user;
+      req.user = applyEmbedLock(user, req);
       next();
     } catch (e) {
+      const status = e && e.status ? e.status : 500;
+      if (status === 403) return res.status(403).json({ error: e.message, embedMismatch: true });
       next(e);
     }
   };
+}
+
+async function acceptEmbed(pool, req, token) {
+  const ticket = verifyPhraEmbed(token);
+  if (!ticket) throw deny(400, "ลิงก์หมดอายุ กรุณาเปิดจากงานบุคคลใหม่");
+  const wat = await lookupWat(pool, null, ticket.watName);
+  const watName = (wat && wat.name) || ticket.watName;
+  const watId = (wat && wat.id) || null;
+  const cookieTok = signPhraEmbed({
+    watName,
+    email: ticket.email,
+    exp: Date.now() + 8 * 60 * 60 * 1000
+  });
+  let user = await loadSession(pool, req);
+  let sessionToken = "";
+  if (!user && ticket.email) {
+    const r = await pool.query(
+      `SELECT * FROM phra_users WHERE lower(username) = $1 LIMIT 1`,
+      [ticket.email]
+    );
+    const row = r.rows[0];
+    if (row && parseAccountStatus(row.status) === "approved") {
+      const candidate = await enrichPublicUser(pool, publicUser(row));
+      const locked = lockUserToWat(candidate, watName, watId);
+      if (!locked.embedMismatch) {
+        sessionToken = await createSession(pool, row.id);
+        user = locked;
+      }
+    }
+  } else if (user) {
+    user = lockUserToWat(user, watName, watId);
+    if (user.embedMismatch) throw deny(403, "บัญชีพระนี้ไม่ใช่วัดที่เปิดจากงานบุคคล");
+  }
+  return { cookieTok, sessionToken, user: user || null, watName, watId };
 }
 
 function requireAdmin(req, res, next) {
@@ -1063,6 +1177,11 @@ async function rejectAccount(pool, actor, targetId) {
 module.exports = {
   LEVELS,
   ACCESS_LABEL,
+  APP_SCOPE_LABEL,
+  parseAppScope,
+  isDutiesOnly,
+  isDutiesAllowedPath,
+  requireAppScope,
   COOKIE,
   deny,
   parseAccessLevel,
@@ -1077,7 +1196,12 @@ module.exports = {
   publicUser,
   parseCookies,
   setSessionCookie,
+  setEmbedCookie,
   clearSessionCookie,
+  readEmbedPayload,
+  isEmbedRequest,
+  acceptEmbed,
+  applyEmbedLock,
   appendViewScope,
   appendHomeScope,
   insertBeforeOrderBy,

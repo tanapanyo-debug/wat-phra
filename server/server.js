@@ -5,7 +5,8 @@ const { standingOf } = require("./lib/edu");
 const { displayName, displayNameAt } = require("./lib/names");
 const { SAMANASAK, SAMANASAK_CLASS, SAMANASAK_GROUPS, THANANAMA, isThananukromAction, isThananukromEntry } = require("./lib/samanasak");
 const { courseOut, ensureCourses, thaiDigits, normalizeCourseKind } = require("./lib/courses");
-const { destWat, lastAffiliation, affHomeWat, sameWatName, homeRainPlace, statusFromLastAffiliation, movedStatusLabel } = require("./lib/affStatus");
+const { destWat, lastAffiliation, affHomeWat, sameWatName, homeRainPlace, statusFromLastAffiliation, movedStatusLabel, parseIll, parseIllBedridden, parseIllPlace, monkIsIll, canonicalStatus, statusFilterClause } = require("./lib/affStatus");
+const { ensureDuties, listEvents, addEvent, deleteEvent, listDaily, saveDaily, listMonth } = require("./lib/duties");
 const { headerLines, detectLevel, formRow } = require("./lib/rainsReport");
 const { currentBe, isNovice, personTypeAt, ordainedYearBe, vassaFor, ageAt, toParts } = require("./lib/vassa");
 const { pickRain, carrySourceSql, RAIN_KIND_PENDING, isPendingRainKind } = require("./lib/rainPick");
@@ -53,6 +54,7 @@ const {
   loginAllowed,
   destroySession,
   setSessionCookie,
+  setEmbedCookie,
   clearSessionCookie,
   registerUser,
   isRegisterOpen,
@@ -80,8 +82,13 @@ const {
   fillUserScope,
     hashPassword,
     publicUser,
-    loadSession
+    loadSession,
+    acceptEmbed,
+    readEmbedPayload,
+    isEmbedRequest,
+    requireAppScope
 } = require("./lib/phraAuth");
+const { FRAME_ANCESTORS, lockUserToWat } = require("./lib/phraEmbed");
 const {
   isMailConfigured,
   sendMail,
@@ -341,6 +348,9 @@ function readBio(b) {
     .map((k) => normalizeCourseKind(k))
     .filter((k) => k && !CORE[k])
     .slice(0, 20);
+  out.ill = parseIll(src.ill);
+  out.illBedridden = parseIllBedridden(src.illBedridden);
+  out.illPlace = parseIllPlace(src.illPlace);
   return out;
 }
 
@@ -463,6 +473,7 @@ async function ensureSchema() {
   await ensureWatSchema(pool);
   await ensureTempleDir(pool);
   await ensureAuthSchema(pool);
+  await ensureDuties(pool);
   await ensureRainYearLockSchema(pool);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS monk_affiliations (
@@ -591,8 +602,11 @@ function rowOut(r, affiliations, rains, asOfYear, courses) {
     ranks: cls.ranks,
     courses: Array.isArray(courses) ? courses.map(courseOut) : [],
     ordainedOn: r.ordained_on ? String(r.ordained_on).slice(0, 10) : "",
-    status: r.status,
+    status: canonicalStatus(r.status),
     movedToWat: (r.bio && r.bio.movedToWat) || "",
+    ill: monkIsIll(r.status, r.bio),
+    illBedridden: parseIllBedridden(r.bio && r.bio.illBedridden),
+    illPlace: parseIllPlace(r.bio && r.bio.illPlace),
     note: r.note,
     yearsAtWat: stay.yearsAtWat,
     yearsAtWatFrom: stay.yearsAtWatFrom,
@@ -706,6 +720,17 @@ function readBody(b) {
   const watName = str(b.watName, 160) || (latest ? latest.wat_name : "");
   const fromAff = statusFromLastAffiliation(affiliations, status, bio.movedToWat, watName);
   bio.movedToWat = fromAff.movedToWat || "";
+  const statusOut = STATUSES.includes(fromAff.status) ? fromAff.status : (STATUSES.includes(canonicalStatus(status)) ? canonicalStatus(status) : "จำพรรษา");
+  const illOn = statusOut === "จำพรรษา" && (parseIll(bio.ill) || String(status || "").trim() === "อาพาธ");
+  if (illOn) {
+    bio.ill = true;
+    bio.illBedridden = parseIllBedridden(bio.illBedridden);
+    bio.illPlace = parseIllPlace(bio.illPlace) || "วัด";
+  } else {
+    bio.ill = false;
+    bio.illBedridden = false;
+    bio.illPlace = "";
+  }
   return {
     person_type: PERSON_TYPES.includes(personType) ? personType : "ภิกษุ",
     chaya: chayaPali,
@@ -736,7 +761,7 @@ function readBody(b) {
     is_preacher: !!(b.isPreacher === true || b.isPreacher === "true" || b.isPreacher === "1"),
     is_vipassana: !!(b.isVipassana === true || b.isVipassana === "true" || b.isVipassana === "1"),
     ordained_on: dateOrNull(b.ordainedOn),
-    status: STATUSES.includes(fromAff.status) ? fromAff.status : (STATUSES.includes(status) ? status : "จำพรรษา"),
+    status: statusOut,
     note: str(b.note, 500),
     affiliations,
     rains,
@@ -889,6 +914,10 @@ function adminNeedsPlacePick(user, bits) {
 const app = express();
 app.disable("x-powered-by");
 if (ON_RENDER) app.set("trust proxy", 1);
+app.use((req, res, next) => {
+  res.set("Content-Security-Policy", "frame-ancestors " + FRAME_ANCESTORS.join(" "));
+  next();
+});
 app.use(express.json({ limit: "4mb" }));
 
 app.get("/api/health", async (req, res) => {
@@ -922,6 +951,15 @@ app.post("/api/login", async (req, res) => {
       return res.status(429).json({ error: "ลองเข้าสู่ระบบบ่อยเกินไป กรุณารอสักครู่" });
     }
     const out = await login(pool, (req.body && (req.body.email || req.body.username)), req.body && req.body.password);
+    const embed = isEmbedRequest(req) ? readEmbedPayload(req) : null;
+    if (embed) {
+      const locked = lockUserToWat(out.user, embed.watName);
+      if (locked && locked.embedMismatch) {
+        return res.status(403).json({ error: "บัญชีพระนี้ไม่ใช่วัดที่เปิดจากงานบุคคล", embedMismatch: true });
+      }
+      setSessionCookie(res, out.token, { embed: true });
+      return res.json({ user: locked });
+    }
     setSessionCookie(res, out.token);
     res.json({ user: out.user });
   } catch (e) {
@@ -1002,13 +1040,76 @@ app.post("/api/reset-password", async (req, res) => {
     res.status(status).json({ error: e.message || "ตั้งรหัสผ่านใหม่ไม่สำเร็จ" });
   }
 });
+app.post("/api/embed/accept", async (req, res) => {
+  try {
+    const out = await acceptEmbed(pool, req, req.body && req.body.token);
+    setEmbedCookie(res, out.cookieTok);
+    if (out.sessionToken) setSessionCookie(res, out.sessionToken, { embed: true });
+    res.json({
+      watName: out.watName,
+      watId: out.watId,
+      user: out.user,
+      embedLocked: true
+    });
+  } catch (e) {
+    const status = e && e.status ? e.status : 500;
+    res.status(status).json({
+      error: e.message || "เปิดจากงานบุคคลไม่สำเร็จ",
+      embedMismatch: status === 403
+    });
+  }
+});
 app.use("/api", requireAuth(pool));
+app.use("/api", requireAppScope);
 app.get("/api/me", (req, res) => {
   res.json({
     user: req.user,
     canManagePlaces: canManagePlaces(req.user),
     canManageUsers: canManageUsers(req.user)
   });
+});
+app.get("/api/duties/events", async (req, res) => {
+  try {
+    res.json(await listEvents(pool, req.user, req.query || {}));
+  } catch (e) {
+    sendErr(res, e, "อ่านบันทึกศาสนกิจไม่สำเร็จ");
+  }
+});
+app.post("/api/duties/events", async (req, res) => {
+  try {
+    const row = await addEvent(pool, req.user, req.body || {});
+    res.json({ row });
+  } catch (e) {
+    sendErr(res, e, "บันทึกศาสนกิจไม่สำเร็จ");
+  }
+});
+app.delete("/api/duties/events/:id", async (req, res) => {
+  try {
+    res.json(await deleteEvent(pool, req.user, req.params.id));
+  } catch (e) {
+    sendErr(res, e, "ลบรายการไม่สำเร็จ");
+  }
+});
+app.get("/api/duties/daily", async (req, res) => {
+  try {
+    res.json(await listDaily(pool, req.user, req.query || {}));
+  } catch (e) {
+    sendErr(res, e, "อ่านทำวัตรประจำวันไม่สำเร็จ");
+  }
+});
+app.put("/api/duties/daily", async (req, res) => {
+  try {
+    res.json(await saveDaily(pool, req.user, req.body || {}));
+  } catch (e) {
+    sendErr(res, e, "บันทึกทำวัตรประจำวันไม่สำเร็จ");
+  }
+});
+app.get("/api/duties/month", async (req, res) => {
+  try {
+    res.json(await listMonth(pool, req.user, req.query || {}));
+  } catch (e) {
+    sendErr(res, e, "อ่านรายงานทำวัตรไม่สำเร็จ");
+  }
 });
 app.post("/api/me/request-level", async (req, res) => {
   try {
@@ -1050,9 +1151,9 @@ app.post("/api/users", requireAdmin, async (req, res) => {
   try {
     const b = await fillUserScope(pool, readUserBody(req.body || {}, true));
     const r = await pool.query(
-      `INSERT INTO phra_users (username, password_hash, display_name, access_level, status, wat_id, wat_name, sangha_tambon, district, province)
-       VALUES ($1,$2,$3,$4,'approved',$5,$6,$7,$8,$9) RETURNING *`,
-      [b.username, hashPassword(b.password), b.displayName, b.accessLevel, b.watId, b.watName, b.sanghaTambon, b.district, b.province]
+      `INSERT INTO phra_users (username, password_hash, display_name, access_level, status, wat_id, wat_name, sangha_tambon, district, province, app_scope)
+       VALUES ($1,$2,$3,$4,'approved',$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [b.username, hashPassword(b.password), b.displayName, b.accessLevel, b.watId, b.watName, b.sanghaTambon, b.district, b.province, b.appScope]
     );
     res.json({ user: publicUser(r.rows[0]) });
   } catch (e) {
@@ -1075,9 +1176,9 @@ app.patch("/api/users/:id", requireAdmin, async (req, res) => {
     const username = b.username || cur.rows[0].username;
     const r = await pool.query(
       `UPDATE phra_users SET username=$2, password_hash=$3, display_name=$4, access_level=$5,
-         wat_id=$6, wat_name=$7, sangha_tambon=$8, district=$9, province=$10, updated_at=now()
+         wat_id=$6, wat_name=$7, sangha_tambon=$8, district=$9, province=$10, app_scope=$11, updated_at=now()
        WHERE id=$1 RETURNING *`,
-      [id, username, hash, b.displayName, b.accessLevel, b.watId, b.watName, b.sanghaTambon, b.district, b.province]
+      [id, username, hash, b.displayName, b.accessLevel, b.watId, b.watName, b.sanghaTambon, b.district, b.province, b.appScope]
     );
     res.json({ user: publicUser(r.rows[0]) });
   } catch (e) {
@@ -1337,8 +1438,11 @@ function reportRow(r, stay, rains, asOf, courses, affiliations) {
     age: age != null ? age : r.age,
     vassa: typeAt === "สามเณร" ? null : computed,
     ordainedYearBe: oy,
-    status: r.status || "จำพรรษา",
+    status: canonicalStatus(r.status || "จำพรรษา"),
     movedToWat: (r.bio && r.bio.movedToWat) || "",
+    ill: monkIsIll(r.status, r.bio),
+    illBedridden: parseIllBedridden(r.bio && r.bio.illBedridden),
+    illPlace: parseIllPlace(r.bio && r.bio.illPlace),
     rankKind: stayCls.rankKind,
     isDhammaduta: stayCls.isDhammaduta,
     isPreacher: stayCls.isPreacher,
@@ -1674,7 +1778,8 @@ app.get("/api/report", async (req, res) => {
     const district = place.district || str(req.query.district, 80);
     const province = place.province;
     const unmatched = String(req.query.unmatched || "") === "1";
-    const statusWanted = STATUSES.includes(str(req.query.status, 40)) ? str(req.query.status, 40) : "";
+    const statusQ = str(req.query.status, 40);
+    const statusWanted = (STATUSES.includes(statusQ) || statusQ === "อาพาธ") ? statusQ : "";
     const statusSql = `COALESCE(NULLIF(m.status,''), 'จำพรรษา')`;
     const sanghaExpr = `COALESCE(NULLIF(pw.sangha_tambon,''), NULLIF(y.sangha_tambon,''), CASE WHEN NULLIF(y.wat_name,'') IS NOT NULL THEN '' ELSE m.sangha_tambon END)`;
     const sanghaExprM = `COALESCE(NULLIF(pw.sangha_tambon,''), m.sangha_tambon)`;
@@ -1703,7 +1808,7 @@ app.get("/api/report", async (req, res) => {
                   OR COALESCE(NULLIF(y.wat_name,''), m.wat_name) ILIKE '%intharam%'
                 )))
            AND ($7 = 0 OR ${sanghaExpr} = '')
-           AND ($8 = '' OR ${statusSql} = $8)
+           AND ${statusFilterClause(statusSql, "$8")}
            AND ($9 = '' OR COALESCE(NULLIF(pw.province,''), ${yearStayProvinceSql("$9")}) = $9)
          ORDER BY ${sanghaExpr}, CASE WHEN COALESCE(m.person_type, 'ภิกษุ') = 'สามเณร' THEN 1 ELSE 0 END, 8, m.chaya, m.id`;
     const allSql = `SELECT m.id, m.person_type, m.chaya, m.title, m.former_name, m.former_surname, m.status,
@@ -1724,7 +1829,7 @@ app.get("/api/report", async (req, res) => {
            AND ($3 = '' OR COALESCE(NULLIF(pw.district,''), m.district) = $3)
            AND ($4 = '' OR ${sanghaExprM} = $4)
            AND ($5 = '' OR m.wat_name = $5)
-           AND ($6 = '' OR ${statusSql} = $6)
+           AND ${statusFilterClause(statusSql, "$6")}
            AND ($7 = '' OR COALESCE(NULLIF(pw.province,''), m.province) = $7)
          ORDER BY ${sanghaExprM}, CASE WHEN COALESCE(m.person_type, 'ภิกษุ') = 'สามเณร' THEN 1 ELSE 0 END, m.wat_name, m.chaya, m.id`;
     if (adminNeedsPlacePick(req.user, { q, watName, sanghaTambon, district, province, unmatched })) {
@@ -1782,9 +1887,11 @@ app.get("/api/report", async (req, res) => {
     const rankCounts = {};
     const statusCounts = {};
     STATUSES.forEach((s) => { statusCounts[s] = 0; });
+    statusCounts["อาพาธ"] = 0;
     rows.forEach((x) => {
       const st = STATUSES.includes(x.status) ? x.status : "จำพรรษา";
       statusCounts[st] = (statusCounts[st] || 0) + 1;
+      if (x.ill) statusCounts["อาพาธ"] = (statusCounts["อาพาธ"] || 0) + 1;
       (x.ranks || []).forEach((t) => { rankCounts[t] = (rankCounts[t] || 0) + 1; });
       if (x.isParian) rankCounts["พระเปรียญธรรม"] = (rankCounts["พระเปรียญธรรม"] || 0) + 1;
     });

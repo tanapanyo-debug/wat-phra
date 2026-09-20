@@ -90,6 +90,18 @@ async function ensureWatSchema(pool) {
     )
   `);
   await pool.query(`ALTER TABLE phra_sangha_tambons ADD COLUMN IF NOT EXISTS province TEXT NOT NULL DEFAULT ''`);
+  await pool.query(`DROP INDEX IF EXISTS phra_sangha_tambons_place`);
+  await pool.query(`
+    DELETE FROM phra_sangha_tambons s
+     WHERE s.province = ''
+       AND EXISTS (
+         SELECT 1 FROM phra_sangha_tambons o
+          WHERE o.id <> s.id
+            AND lower(o.name) = lower(s.name)
+            AND lower(o.district) = lower(s.district)
+            AND lower(o.province) = 'พระนครศรีอยุธยา'
+       )
+  `);
   await pool.query(`
     UPDATE phra_sangha_tambons s
        SET province = COALESCE(NULLIF((
@@ -99,7 +111,14 @@ async function ensureWatSchema(pool) {
        ), ''), 'พระนครศรีอยุธยา')
      WHERE s.province = ''
   `);
-  await pool.query(`DROP INDEX IF EXISTS phra_sangha_tambons_place`);
+  await pool.query(`
+    DELETE FROM phra_sangha_tambons a
+     USING phra_sangha_tambons b
+     WHERE a.id > b.id
+       AND lower(a.name) = lower(b.name)
+       AND lower(a.district) = lower(b.district)
+       AND lower(a.province) = lower(b.province)
+  `);
   await pool.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS phra_sangha_tambons_place
       ON phra_sangha_tambons (lower(name), lower(district), lower(province))
@@ -112,7 +131,12 @@ async function ensureWatSchema(pool) {
   await harvestMissingWats(pool);
   await pool.query(`
     INSERT INTO phra_sangha_tambons (name, district, province)
-    SELECT DISTINCT t.sangha_tambon, t.district,
+    SELECT DISTINCT ON (
+      lower(t.sangha_tambon),
+      lower(t.district),
+      lower(COALESCE(NULLIF(t.province, ''), 'พระนครศรีอยุธยา'))
+    )
+           t.sangha_tambon, t.district,
            COALESCE(NULLIF(t.province, ''), 'พระนครศรีอยุธยา')
       FROM phra_wats t
      WHERE t.sangha_tambon <> ''
@@ -122,6 +146,8 @@ async function ensureWatSchema(pool) {
             AND lower(s.district) = lower(t.district)
             AND lower(s.province) = lower(COALESCE(NULLIF(t.province, ''), 'พระนครศรีอยุธยา'))
        )
+     ORDER BY lower(t.sangha_tambon), lower(t.district),
+              lower(COALESCE(NULLIF(t.province, ''), 'พระนครศรีอยุธยา')), t.id
   `);
 }
 

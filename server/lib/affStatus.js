@@ -53,9 +53,58 @@ function homeRainPlace(affiliations, monk) {
   };
 }
 
+const ILL_PLACES = ["บ้าน", "วัด", "โรงพยาบาล"];
+
+function isLockedStatus(status) {
+  const st = String(status || "").trim();
+  return st === "มรณภาพ" || st === "ลาสิกขา";
+}
+
+function isResidentLikeStatus(status) {
+  const st = String(status == null || status === "" ? "จำพรรษา" : status).trim();
+  return st === "จำพรรษา" || st === "อาพาธ";
+}
+
+function parseIll(v) {
+  return v === true || v === "true" || v === "1" || v === "อาพาธ";
+}
+
+function parseIllBedridden(v) {
+  return v === true || v === "true" || v === "1" || v === "ติดเตียง";
+}
+
+function parseIllPlace(v) {
+  const s = String(v || "").replace(/\s+/g, "").trim();
+  if (s === "โรงพยาบาล" || s === "โรงพบาบาล") return "โรงพยาบาล";
+  if (s === "บ้าน") return "บ้าน";
+  if (s === "วัด") return "วัด";
+  return "";
+}
+
+function monkIsIll(status, bio) {
+  const st = String(status || "").trim();
+  if (st === "อาพาธ") return true;
+  return parseIll(bio && bio.ill);
+}
+
+function canonicalStatus(status) {
+  const st = String(status || "").trim() || "จำพรรษา";
+  return st === "อาพาธ" ? "จำพรรษา" : st;
+}
+
+function illStatusLabel(ill, illBedridden, illPlace) {
+  if (!parseIll(ill)) return "";
+  const bits = ["อาพาธ"];
+  if (parseIllBedridden(illBedridden)) bits.push("ติดเตียง");
+  const place = parseIllPlace(illPlace);
+  if (place) bits.push(place);
+  return bits.join(" · ");
+}
+
 function statusFromLastAffiliation(affiliations, currentStatus, existingMovedTo, currentWat) {
-  const cur = String(currentStatus || "").trim() || "จำพรรษา";
-  if (cur === "มรณภาพ" || cur === "ลาสิกขา") {
+  const raw = String(currentStatus || "").trim() || "จำพรรษา";
+  const cur = canonicalStatus(raw);
+  if (isLockedStatus(cur)) {
     return { status: cur, movedToWat: "" };
   }
   const last = lastAffiliation(affiliations);
@@ -70,11 +119,23 @@ function statusFromLastAffiliation(affiliations, currentStatus, existingMovedTo,
   return { status: cur, movedToWat: cur === "ย้ายวัด" ? String(existingMovedTo || "").trim() : "" };
 }
 
-function movedStatusLabel(status, movedToWat) {
-  const st = String(status || "").trim() || "จำพรรษา";
+function movedStatusLabel(status, movedToWat, ill, illBedridden, illPlace) {
+  const st = canonicalStatus(status);
   const dest = String(movedToWat || "").trim();
-  if (st === "ย้ายวัด" && dest) return "ย้ายวัด · " + dest;
-  return st;
+  const base = st === "ย้ายวัด" && dest ? "ย้ายวัด · " + dest : st;
+  const extra = isResidentLikeStatus(status) ? illStatusLabel(ill || String(status || "").trim() === "อาพาธ", illBedridden, illPlace) : "";
+  if (!extra) return base;
+  return base === "จำพรรษา" ? "จำพรรษา · " + extra : extra;
 }
 
-module.exports = { destWat, lastAffiliation, affHomeWat, sameWatName, homeRainPlace, statusFromLastAffiliation, movedStatusLabel };
+function statusFilterClause(statusSql, param) {
+  const ill = `(COALESCE(m.bio->>'ill','') IN ('true','1') OR ${statusSql} = 'อาพาธ')`;
+  return `(${param} = '' OR (${param} = 'จำพรรษา' AND ${statusSql} IN ('จำพรรษา','อาพาธ')) OR (${param} = 'อาพาธ' AND ${ill}) OR (${param} <> 'จำพรรษา' AND ${param} <> 'อาพาธ' AND ${statusSql} = ${param}))`;
+}
+
+module.exports = {
+  destWat, lastAffiliation, affHomeWat, sameWatName, homeRainPlace,
+  statusFromLastAffiliation, movedStatusLabel, isLockedStatus, isResidentLikeStatus,
+  ILL_PLACES, parseIll, parseIllBedridden, parseIllPlace, monkIsIll, canonicalStatus,
+  illStatusLabel, statusFilterClause
+};

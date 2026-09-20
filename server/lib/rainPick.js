@@ -9,7 +9,7 @@ function pickRain(rains, wantedYear, status) {
   const exact = rows.find((x) => rainYearOf(x) === y);
   if (exact) return exact;
   const st = String(status == null || status === "" ? "จำพรรษา" : status).trim();
-  if (st !== "จำพรรษา") return null;
+  if (st !== "จำพรรษา" && st !== "อาพาธ") return null;
   return rows
     .filter((x) => rainYearOf(x) <= y)
     .sort((a, b) => rainYearOf(b) - rainYearOf(a))[0] || null;
@@ -25,7 +25,7 @@ function rainCarryJoin(monkAlias, yearParam) {
        AND y0.year_be <= ${y}
        AND (
          y0.year_be = ${y}
-         OR COALESCE(NULLIF(${m}.status,''), 'จำพรรษา') = 'จำพรรษา'
+         OR COALESCE(NULLIF(${m}.status,''), 'จำพรรษา') IN ('จำพรรษา', 'อาพาธ')
        )
      ORDER BY y0.year_be DESC
      LIMIT 1
@@ -34,7 +34,7 @@ function rainCarryJoin(monkAlias, yearParam) {
 
 function canCarryStatus(status) {
   const st = String(status == null || status === "" ? "จำพรรษา" : status).trim();
-  return st === "จำพรรษา";
+  return st === "จำพรรษา" || st === "อาพาธ";
 }
 
 const RAIN_KIND_PENDING = "ยังไม่มา";
@@ -51,7 +51,7 @@ function carrySourceSql(watPlaceSql) {
       JOIN monk_rains y ON y.monk_id = m.id AND y.year_be = $1
       LEFT JOIN ${watPlaceSql} pw ON lower(pw.name) = lower(COALESCE(NULLIF(y.wat_name,''), m.wat_name))
        AND (COALESCE(NULLIF(y.district,''), m.district) = '' OR lower(pw.district) = lower(COALESCE(NULLIF(y.district,''), m.district)))
-     WHERE COALESCE(NULLIF(m.status,''), 'จำพรรษา') = 'จำพรรษา'
+     WHERE COALESCE(NULLIF(m.status,''), 'จำพรรษา') IN ('จำพรรษา', 'อาพาธ')
        AND COALESCE(NULLIF(y.rain_kind,''), '') <> '${RAIN_KIND_PENDING}'
        AND $2::int <> $1
        AND ($3::text = '' OR COALESCE(NULLIF(y.wat_name,''), m.wat_name) = $3 OR m.wat_name = $3)

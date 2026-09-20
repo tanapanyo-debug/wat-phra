@@ -35,6 +35,7 @@ function readKey(file, key) {
       "PHRA_ADMIN_USER=ra_yut@hotmail.com",
       "# PHRA_ADMIN_PASSWORD=",
       "ACCOUNTING_DATABASE_URL=" + parseUrl(fromAccounting || dbUrl).original.replace("/wat_phra", "/wat_accounting"),
+      "# PHRA_EMBED_SECRET=  ตั้งให้ตรงกับบัญชีวัดเมื่อเปิดจากงานบุคคล",
       ""
     ].join("\n"), "utf8");
     console.log("wrote server/.env → ฐาน wat_phra พอร์ต 4200");

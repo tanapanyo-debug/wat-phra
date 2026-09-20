@@ -18,11 +18,13 @@ eq(pickRain(rains, 2569, "จำพรรษา").wat_name, "วัดอิน�
 eq(pickRain(rains, 2569, "มรณภาพ"), null, "do not carry if passed away");
 eq(pickRain(rains, 2569, "ลาสิกขา"), null, "do not carry if disrobed");
 eq(pickRain(rains, 2569, "ย้ายวัด"), null, "do not carry if moved");
+eq(pickRain(rains, 2569, "อาพาธ").year_be, 2568, "ill still carries last rain");
 eq(pickRain([{ year_be: 2569, wat_name: "วัดใหม่" }, ...rains], 2569, "จำพรรษา").wat_name, "วัดใหม่", "prefer exact 2569");
 eq(pickRain(rains, 2567, "จำพรรษา").year_be, 2566, "carry older year if still resident");
 eq(pickRain([{ year_be: 2568, wat_name: "วัดอินทาราม" }], 2568, "มรณภาพ").year_be, 2568, "exact year still shows even if died");
 
 eq(canCarryStatus("จำพรรษา"), true, "resident can carry");
+eq(canCarryStatus("อาพาธ"), true, "ill still carries rain");
 eq(canCarryStatus(""), true, "blank status carries as resident");
 eq(canCarryStatus("ย้ายวัด"), false, "moved does not carry");
 eq(canCarryStatus("มรณภาพ"), false, "death does not carry");
@@ -32,8 +34,8 @@ if (!fromWhere.includes("$2::int <> $1")) {
   console.error("FAIL carry SQL must allow both forward and backfill");
   process.exit(1);
 }
-if (!fromWhere.includes("ยังไม่มา")) {
-  console.error("FAIL carry SQL must skip pending rains");
+if (!fromWhere.includes("อาพาธ")) {
+  console.error("FAIL carry SQL must keep ill monks");
   process.exit(1);
 }
 if (!isPendingRainKind("ยังไม่มา") || RAIN_KIND_PENDING !== "ยังไม่มา") {

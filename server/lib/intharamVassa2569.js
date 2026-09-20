@@ -240,7 +240,7 @@ async function ensureIntharamVassa2569(pool) {
   await pool.query(
     `UPDATE monks m
         SET stay_wat_id = $1,
-            status = CASE WHEN m.status IN ('มรณภาพ', 'ลาสิกขา', 'ย้ายวัด') THEN m.status ELSE 'จำพรรษา' END,
+            status = CASE WHEN m.status IN ('มรณภาพ', 'ลาสิกขา', 'ย้ายวัด', 'อาพาธ') THEN m.status ELSE 'จำพรรษา' END,
             updated_at = now()
       WHERE ${monkMatchSql("m")}`,
     [wat.id]

@@ -32,7 +32,7 @@ body {
 }
 .top b { display: block; font-size: 1.15rem; }
 .top small { color: var(--muted); }
-.wrap { max-width: 1040px; margin: 0 auto; padding: 16px 14px 48px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 16px 14px 48px; }
 .bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
 .bar input, .bar select {
   flex: 1;
@@ -42,6 +42,76 @@ body {
   border-radius: 10px;
   font: inherit;
   background: #fff;
+}
+.list-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.tool-search #q {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  background: #fff;
+}
+.tool-filters,
+.tool-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.tool-filters select {
+  flex: 0 1 auto;
+  min-width: 128px;
+  max-width: 210px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  background: #fff;
+}
+.tool-more { position: relative; }
+.tool-more > summary {
+  list-style: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+.tool-more > summary::-webkit-details-marker { display: none; }
+.tool-more[open] > summary {
+  border-color: var(--teal);
+  color: var(--teal-d);
+}
+.tool-more-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 8;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(36,48,56,.12);
+}
+.tool-more-menu .ghost,
+.tool-more-menu a.ghost {
+  width: 100%;
+  text-align: left;
+  display: block;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 button {
   font: inherit;
@@ -103,10 +173,21 @@ table.rpt .st { white-space: nowrap; font-size: 13px; font-weight: 700; color: #
 table.rpt .st-resident { color: #15803d; }
 table.rpt .st-pending { color: #c2410c; }
 table.rpt .st-dead { color: #b91c1c; }
+table.rpt .st-ill { color: #b45309; }
 table.rpt .edu { white-space: nowrap; font-size: 13px; }
 table.rpt .note { font-size: 13px; }
 .view-tag.st-resident { color: #15803d; background: #fff; }
 .view-tag.st-dead { color: #b91c1c; background: #fff; }
+.view-tag.st-ill { color: #b45309; background: #fff; }
+#statusBlock {
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #e7e0d6;
+  border-radius: 12px;
+  background: #fffaf3;
+}
+#illWrap label.ill-bed { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+#illWrap input[type="checkbox"] { width: 18px; height: 18px; accent-color: #b45309; }
 .stay { font-weight: 700; color: var(--teal-d); }
 .stay-src { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
 .home-btn, .rain-act {
@@ -336,18 +417,52 @@ details.reg-book { padding-top: 4px; }
 .aff-in-block .aff-top b { color: #146e68; }
 .ghost.aff-move-btn { background: #fbf5ea; border-color: #e4d0a6; color: #7a5200; }
 .ghost.aff-in-btn { background: #eaf6f3; border-color: #b5d6d0; color: #146e68; }
+body.embed .hub-foot,
+body.embed .nav > a.ghost,
+body.embed #nav-places,
+body.embed #nav-users,
+body.embed #level-request-box,
+body.embed #btn-goto-signup,
+body.embed #btn-logout { display: none !important; }
+body.embed .top { padding: 10px 16px; }
+body.embed .top small { display: block; }
+body.duties-only #nav-list,
+body.duties-only #nav-places,
+body.duties-only #nav-users,
+body.duties-only #page-list,
+body.duties-only #dlg,
+body.duties-only #page-places,
+body.duties-only #page-users,
+body.duties-only #level-request-box { display: none !important; }
   @media print {
-  .top, .nav, .bar, #page-places, #page-users, #page-login { display: none !important; }
+  .top, .nav, .bar, .list-tools, #page-places, #page-users, #page-duties, #page-login { display: none !important; }
   body:not(.print-data) #dlg { display: none !important; }
   body.print-data #page-list { display: none !important; }
   body.print-rains #page-list,
   body.print-rains .top,
   body.print-rains #page-places,
   body.print-rains #page-users,
+  body.print-rains #page-duties,
   body.print-rains #dlg,
+  body.print-rains #duty-month-report,
   body.print-rains .rains-toolbar { display: none !important; }
+  body.print-duty #page-list,
+  body.print-duty .top,
+  body.print-duty #page-places,
+  body.print-duty #page-users,
+  body.print-duty #page-duties,
+  body.print-duty #dlg,
+  body.print-duty #rains-report,
+  body.print-duty .rains-toolbar { display: none !important; }
   .home-btn, .rain-act { display: none !important; }
   body.print-rains #rains-report {
+    display: block !important;
+    position: static;
+    inset: auto;
+    padding: 0;
+    overflow: visible;
+  }
+  body.print-duty #duty-month-report {
     display: block !important;
     position: static;
     inset: auto;
@@ -380,8 +495,29 @@ details.reg-book { padding-top: 4px; }
   }
   table.rpt th { background: #eee !important; -webkit-print-color-adjust: exact; }
   @page { margin: 12mm; }
-  @page rains-sheet { size: A4 landscape; margin: 8mm; }
+  @page rains-sheet { size: legal landscape; margin: 6mm 5mm; }
+  @page duty-sheet { size: A4 landscape; margin: 8mm; }
   body.print-rains { background: #fff; page: rains-sheet; }
+  body.print-duty { background: #fff; page: duty-sheet; }
+  body.print-rains .rains-head { margin: 0 0 6px; }
+  body.print-rains .rains-head .t1 { font-size: 16px; }
+  body.print-rains .rains-head .t2,
+  body.print-rains .rains-head .t3 { font-size: 13px; }
+  body.print-rains #rains-report-body { width: auto; max-width: none; }
+  body.print-rains table.rains-sheet { font-size: 9px; }
+  body.print-rains table.rains-sheet th { font-size: 8px; }
+  body.print-rains table.rains-sheet th,
+  body.print-rains table.rains-sheet td { padding: 1px 1px; }
+  body.print-rains .rains-foot { margin: 6px 0 0; font-size: 11px; }
+  body.print-duty #duty-month-report-body { width: auto; max-width: none; }
+  body.print-duty table.duty-sheet { font-size: 11px; }
+  body.print-duty table.duty-sheet th,
+  body.print-duty table.duty-sheet td { padding: 2px 4px; }
+  body.print-duty .rains-head { margin: 0 0 6px; }
+  body.print-duty .rains-head .t1 { font-size: 16px; }
+  body.print-duty .rains-head .t2,
+  body.print-duty .rains-head .t3 { font-size: 13px; }
+  body.print-duty .rains-foot { margin: 6px 0 0; font-size: 11px; }
 }
 form { display: grid; gap: 8px; }
 form[hidden], [hidden] { display: none !important; }
@@ -472,7 +608,9 @@ body.need-login .top,
 body.need-login #page-list,
 body.need-login #page-places,
 body.need-login #page-users,
+body.need-login #page-duties,
 body.need-login #rains-report,
+body.need-login #duty-month-report,
 body.need-login #dlg { display: none !important; }
 details { margin-top: 4px; }
 details summary { cursor: pointer; font-weight: 700; color: var(--teal-d); }
@@ -491,7 +629,54 @@ body.rains-open .top,
 body.rains-open #page-list,
 body.rains-open #page-places,
 body.rains-open #page-users,
+body.rains-open #page-duties,
+body.rains-open #duty-month-report,
 body.rains-open #dlg { display: none !important; }
+#duty-month-report {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  overflow: auto;
+  background: #fff;
+  padding: 16px 18px 48px;
+}
+body.duty-report-open #duty-month-report { display: block; }
+body.duty-report-open .top,
+body.duty-report-open #page-list,
+body.duty-report-open #page-places,
+body.duty-report-open #page-users,
+body.duty-report-open #page-duties,
+body.duty-report-open #rains-report,
+body.duty-report-open #dlg { display: none !important; }
+#duty-month-report-body {
+  width: 277mm;
+  max-width: 100%;
+  margin: 0 auto;
+}
+table.duty-sheet {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: #fff;
+  font-size: 13px;
+}
+table.duty-sheet th,
+table.duty-sheet td {
+  border: 1px solid #333;
+  padding: 4px 6px;
+  vertical-align: middle;
+}
+table.duty-sheet th {
+  background: #eee;
+  font-weight: 700;
+  text-align: center;
+}
+table.duty-sheet td.n { text-align: center; width: 36px; }
+table.duty-sheet td.num { text-align: center; }
+table.duty-sheet td.miss { color: var(--bad); font-weight: 700; }
+table.duty-sheet tfoot td { font-weight: 700; background: #f4f1ea; }
+#duty-report-panel .duty-grid { margin-bottom: 10px; }
 .rains-toolbar {
   display: flex;
   gap: 8px;
@@ -531,21 +716,50 @@ table.rains-sheet {
   border-collapse: collapse;
   table-layout: fixed;
   background: #fff;
-  font-size: 12px;
+  font-size: 11px;
 }
+#rains-report-body {
+  width: 345mm;
+  max-width: 100%;
+  margin: 0 auto;
+}
+table.rains-sheet col.c-no { width: 2.2%; }
+table.rains-sheet col.c-name { width: 12.2%; }
+table.rains-sheet col.c-chaya { width: 12.4%; }
+table.rains-sheet col.c-sur { width: 3.2%; }
+table.rains-sheet col.c-age,
+table.rains-sheet col.c-vassa,
+table.rains-sheet col.c-nak,
+table.rains-sheet col.c-pali { width: 2.3%; }
+table.rains-sheet col.c-year { width: 3.1%; }
+table.rains-sheet col.c-bprov { width: 6.8%; }
+table.rains-sheet col.c-sec { width: 5.8%; }
+table.rains-sheet col.c-wat { width: 5.6%; }
+table.rains-sheet col.c-place { width: 3.8%; }
+table.rains-sheet col.c-school { width: 6.6%; }
+table.rains-sheet col.c-prov { width: 7%; }
+table.rains-sheet col.c-note { width: 2.3%; }
 table.rains-sheet th, table.rains-sheet td {
   border: 1px solid #333;
-  padding: 3px 4px;
+  padding: 2px 2px;
   vertical-align: middle;
   text-align: center;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  line-height: 1.2;
 }
 table.rains-sheet th {
   background: #f3ece1;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 10px;
 }
 table.rains-sheet td.name, table.rains-sheet td.chaya, table.rains-sheet td.wat {
   text-align: left;
+}
+table.rains-sheet td.chaya {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: keep-all;
 }
 .rains-foot {
   margin: 10px 0 0;
@@ -558,6 +772,217 @@ table.rains-sheet td.name, table.rains-sheet td.chaya, table.rains-sheet td.wat 
 .nav { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
 .nav button { background: #fff; border: 1px solid var(--line); padding: 8px 12px; font-weight: 700; }
 .nav button.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+.duty-kind {
+  margin: 0 0 14px;
+}
+#duty-kind {
+  width: 100%;
+  min-height: 44px;
+  font-weight: 700;
+}
+#page-duties .card { padding: 16px; }
+#page-duties label { display: block; font-size: 12px; color: var(--muted); margin: 0 0 4px; }
+#page-duties .duty-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin: 0 0 12px; }
+#page-duties .duty-grid .wide { grid-column: 1 / -1; }
+#page-duties input, #page-duties select, #page-duties textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+}
+#page-duties textarea { min-height: 64px; resize: vertical; }
+#page-duties .leave-in { margin-top: 6px; }
+#page-duties td.attend { min-width: 9em; vertical-align: top; }
+#page-duties td.exempt { width: 8em; vertical-align: top; white-space: nowrap; }
+#page-duties .away-note { display: block; font-size: 12px; color: var(--muted); font-weight: 400; margin-top: 4px; }
+#page-duties input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  margin: 0 6px 0 0;
+  vertical-align: middle;
+}
+#page-duties label.chk {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 32px;
+  white-space: nowrap;
+}
+#duty-daily-list { display: flex; flex-direction: column; gap: 6px; }
+.duty-card {
+  background: var(--sand);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.duty-card-h { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; }
+.duty-card-h b { flex: 1; font-size: .95rem; line-height: 1.3; }
+.duty-times { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 6px; }
+.duty-slot .duty-when { display: block; font-size: 11px; color: var(--muted); font-weight: 700; margin: 0 0 4px; }
+.duty-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.duty-chip {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 2px;
+  cursor: pointer;
+}
+.duty-chip.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+.duty-chip.on[data-v="สาย"] { background: #b45309; border-color: #b45309; }
+.duty-chip.on[data-v="ขาด"] { background: var(--bad); border-color: var(--bad); }
+.duty-chip.on[data-v="ลา"] { background: #6d28d9; border-color: #6d28d9; }
+.duty-card.duty-off .duty-times { display: none; }
+#page-duties .duty-card .leave-in { margin-top: 4px; padding: 7px 9px; }
+#duty-daily-panel .duty-sticky {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+#duty-daily-panel .duty-sticky .btn,
+#duty-daily-panel .duty-sticky .ghost,
+#duty-report-panel .duty-sticky .btn,
+#duty-report-panel .duty-sticky .ghost {
+  flex: 1;
+  min-height: 44px;
+}
+#btn-duty-daily-save {
+  transition: transform .08s ease, filter .08s ease, background .18s ease, box-shadow .18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+#btn-duty-daily-save.duty-press,
+#btn-duty-daily-save:active {
+  transform: scale(.96);
+  filter: brightness(.86);
+}
+#btn-duty-daily-save.duty-saved {
+  background: #15803d;
+  box-shadow: 0 0 0 3px rgba(21, 128, 61, .28);
+}
+#duty-report-panel .duty-sticky {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+#btn-duty-daily-print {
+  width: 100%;
+  min-height: 44px;
+  margin: 0 0 12px;
+  font-weight: 700;
+}
+table.duty-sheet col.c-no { width: 6%; }
+table.duty-sheet col.c-name { width: 28%; }
+table.duty-sheet col.c-miss { width: 10%; }
+table.duty-sheet col.c-pct { width: 11%; }
+table.duty-sheet col.c-note { width: 24%; }
+@media (min-width: 560px) {
+  .duty-times { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 720px) {
+  #page-duties .card { padding: 12px; }
+  #page-duties { padding-bottom: 88px; }
+  #duty-daily-panel .duty-sticky {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    margin: 0;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: #fff;
+    border-top: 1px solid var(--line);
+  }
+}
+.phra-date-face {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.phra-date-face:hover { border-color: var(--teal); }
+#phra-cal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+}
+#phra-cal.on { display: block; }
+#phra-cal .phra-cal-back {
+  position: absolute;
+  inset: 0;
+  background: rgba(36, 48, 56, .28);
+}
+#phra-cal .phra-cal-panel {
+  position: absolute;
+  width: min(360px, calc(100vw - 24px));
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(36,48,56,.16);
+  padding: 14px;
+}
+#phra-cal .phra-cal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+#phra-cal .phra-cal-title {
+  flex: 1;
+  text-align: center;
+  font-weight: 700;
+}
+#phra-cal .phra-cal-nav {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 20px;
+  cursor: pointer;
+}
+#phra-cal .phra-cal-dows,
+#phra-cal .phra-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+#phra-cal .phra-cal-dows span {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 4px 0;
+}
+#phra-cal .phra-cal-day {
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  font: inherit;
+  cursor: pointer;
+}
+#phra-cal .phra-cal-day.muted { color: #94a3b8; }
+#phra-cal .phra-cal-day.today { box-shadow: inset 0 0 0 1px var(--teal); }
+#phra-cal .phra-cal-day.picked { background: var(--teal); color: #fff; }
+#phra-cal .phra-cal-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
 .nav a.ghost {
   display: inline-flex;
   align-items: center;
@@ -657,8 +1082,8 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     <b>ฐานข้อมูลพระภิกษุ</b>
     <form id="login-form">
       <p class="auth-lead">เข้าสู่ระบบเพื่อใช้งาน</p>
-      <label>เมล</label>
-      <input id="login-user" type="email" autocomplete="username" required>
+      <label>เมล หรือ admin</label>
+      <input id="login-user" type="text" autocomplete="username" required placeholder="admin หรือเมล">
       <label>รหัสผ่าน</label>
       <input id="login-pass" type="password" autocomplete="current-password" required>
       <p class="msg" id="login-err"></p>
@@ -716,6 +1141,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   <small>ดึงใช้บ่อยเป็นรายงาน · ทะเบียนเต็มและหนังสือสุทธิเก็บไว้ตอนแก้รายชื่อ</small>
   <nav class="nav">
     <button type="button" class="on" id="nav-list">รายงานพระภิกษุ</button>
+    <button type="button" id="nav-duties">ข้อมูลการปฏิบัติศาสนกิจ</button>
     <button type="button" id="nav-places">จัดวัด-ตำบลคณะสงฆ์</button>
     <button type="button" id="nav-users" hidden>ผู้ใช้</button>
     <span class="who" id="whoami"></span>
@@ -736,68 +1162,148 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     </div>
     <p class="msg" id="req-level-err"></p>
   </div>
-  <div class="bar">
-    <input id="q" placeholder="ค้นชื่อ ฉายา นามเดิม วัด เลขบัตร หรือพาสปอร์ต" autocomplete="off">
-    <select id="yearBe">
-      <option value="">ทุกปีจำพรรษา</option>
-    </select>
-    <select id="viewProvince" hidden>
-      <option value="">เลือกจังหวัด</option>
-    </select>
-    <select id="viewDistrict" hidden>
-      <option value="">เลือกอำเภอ</option>
-    </select>
-    <select id="sanghaTambon">
-      <option value="">ทุกตำบลคณะสงฆ์</option>
-    </select>
-    <select id="watName">
-      <option value="">ทุกวัด</option>
-    </select>
-    <select id="rankKind">
-      <option value="">ทุกประเภท — ราชาคณะ / สัญญาบัตร / ฐานานุกรม / ธรรมทูต / นักเทศน์ / วิปัสสนา / เปรียญธรรม / อื่นๆ</option>
-      <option value="ธรรมทูต">พระธรรมทูต</option>
-      <option value="นักเทศน์">พระนักเทศน์</option>
-      <option value="วิปัสสนาจารย์">พระวิปัสสนาจารย์</option>
-      <option value="ปริยัตินิเทศน์">พระปริยัตินิเทศน์</option>
-      <option value="บัณฑิตเผยแผ่">พระบัณฑิตเผยแผ่</option>
-      <option value="พระเปรียญธรรม">พระเปรียญธรรม</option>
-      <option value="ป.ธ.3">พระเปรียญธรรม ป.ธ.๓</option>
-      <option value="ป.ธ.4">พระเปรียญธรรม ป.ธ.๔</option>
-      <option value="ป.ธ.5">พระเปรียญธรรม ป.ธ.๕</option>
-      <option value="ป.ธ.6">พระเปรียญธรรม ป.ธ.๖</option>
-      <option value="ป.ธ.7">พระเปรียญธรรม ป.ธ.๗</option>
-      <option value="ป.ธ.8">พระเปรียญธรรม ป.ธ.๘</option>
-      <option value="ป.ธ.9">พระเปรียญธรรม ป.ธ.๙</option>
-      <option value="พระราชาคณะ">พระราชาคณะ</option>
-      <option value="พระครูสัญญาบัตร">พระครูสัญญาบัตร</option>
-      <option value="พระครูฐานานุกรม">พระครูฐานานุกรม</option>
-      <option value="พระฐานานุกรม">พระฐานานุกรม</option>
-    </select>
-    <select id="statusFilter">
-      <option value="จำพรรษา">จำพรรษา / Resident</option>
-      <option value="ย้ายวัด">ย้ายวัด / Moved</option>
-      <option value="ลาสิกขา">ลาสิกขา / Disrobed</option>
-      <option value="มรณภาพ">มรณภาพ / Passed away</option>
-      <option value="">ทุกสถานะ / All statuses</option>
-    </select>
-    <button type="button" class="btn" id="btn-rains-carry" hidden>ยกมาจากปีก่อน</button>
-    <button type="button" class="ghost" id="btn-rains-carry-next" hidden>ยกมาจากปีถัดไป</button>
-    <button type="button" class="btn" id="btn-rain-edit" hidden>แก้ไขปี</button>
-    <button type="button" class="ghost" id="btn-rain-stop" hidden>เลิกแก้</button>
-    <button type="button" class="ghost" id="btn-rain-close-year" hidden>ปิดปีจำพรรษา</button>
-    <button type="button" class="ghost" id="btn-rain-open-year" hidden>เปิดปีให้แก้</button>
-    <button type="button" class="btn" id="btn-rains-report">สร้างรายงานภิกษุจำพรรษา</button>
-    <button type="button" class="ghost" id="btn-print">พิมพ์รายชื่อบนจอ</button>
-    <button type="button" class="ghost" id="btn-blank-print">พิมพ์ฟอร์มเปล่า / Print blank form</button>
-    <a class="ghost" id="btn-blank-dl" href="/form-blank.html?download=1" download="form-monk-blank.html" style="display:inline-block;text-decoration:none;border-radius:10px;line-height:1.2">ดาวน์โหลดฟอร์มพิมพ์ / Printable form</a>
-    <a class="ghost" id="btn-blank-xlsx" href="/form-blank.xlsx" style="display:inline-block;text-decoration:none;border-radius:10px;line-height:1.2">ดาวน์โหลด Excel กรอกตรง</a>
-    <button type="button" class="ghost" id="btn-xlsx-load">โหลดจาก Excel / Load from Excel</button>
-    <input id="xlsx-import" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
-    <button type="button" class="ghost" id="btn-new">เพิ่มรายชื่อ</button>
-    <a class="ghost" href="https://wat-accounting.onrender.com/hub" style="display:inline-block;text-decoration:none;border-radius:10px;line-height:1.2">กลับเมนูหลัก</a>
+  <div class="list-tools">
+    <div class="tool-search">
+      <input id="q" placeholder="ค้นชื่อ ฉายา นามเดิม วัด เลขบัตร หรือพาสปอร์ต" autocomplete="off">
+    </div>
+    <div class="tool-filters">
+      <select id="yearBe">
+        <option value="">ทุกปีจำพรรษา</option>
+      </select>
+      <select id="viewProvince" hidden>
+        <option value="">เลือกจังหวัด</option>
+      </select>
+      <select id="viewDistrict" hidden>
+        <option value="">เลือกอำเภอ</option>
+      </select>
+      <select id="sanghaTambon">
+        <option value="">ทุกตำบลคณะสงฆ์</option>
+      </select>
+      <select id="watName">
+        <option value="">ทุกวัด</option>
+      </select>
+      <select id="rankKind">
+        <option value="">ทุกประเภท</option>
+        <option value="ธรรมทูต">พระธรรมทูต</option>
+        <option value="นักเทศน์">พระนักเทศน์</option>
+        <option value="วิปัสสนาจารย์">พระวิปัสสนาจารย์</option>
+        <option value="ปริยัตินิเทศน์">พระปริยัตินิเทศน์</option>
+        <option value="บัณฑิตเผยแผ่">พระบัณฑิตเผยแผ่</option>
+        <option value="พระเปรียญธรรม">พระเปรียญธรรม</option>
+        <option value="ป.ธ.3">พระเปรียญธรรม ป.ธ.๓</option>
+        <option value="ป.ธ.4">พระเปรียญธรรม ป.ธ.๔</option>
+        <option value="ป.ธ.5">พระเปรียญธรรม ป.ธ.๕</option>
+        <option value="ป.ธ.6">พระเปรียญธรรม ป.ธ.๖</option>
+        <option value="ป.ธ.7">พระเปรียญธรรม ป.ธ.๗</option>
+        <option value="ป.ธ.8">พระเปรียญธรรม ป.ธ.๘</option>
+        <option value="ป.ธ.9">พระเปรียญธรรม ป.ธ.๙</option>
+        <option value="พระราชาคณะ">พระราชาคณะ</option>
+        <option value="พระครูสัญญาบัตร">พระครูสัญญาบัตร</option>
+        <option value="พระครูฐานานุกรม">พระครูฐานานุกรม</option>
+        <option value="พระฐานานุกรม">พระฐานานุกรม</option>
+      </select>
+      <select id="statusFilter">
+        <option value="จำพรรษา">จำพรรษา</option>
+        <option value="อาพาธ">อาพาธ</option>
+        <option value="ย้ายวัด">ย้ายวัด</option>
+        <option value="ลาสิกขา">ลาสิกขา</option>
+        <option value="มรณภาพ">มรณภาพ</option>
+        <option value="">ทุกสถานะ</option>
+      </select>
+    </div>
+    <div class="tool-actions">
+      <button type="button" class="btn" id="btn-rains-carry" hidden>ยกมาจากปีก่อน</button>
+      <button type="button" class="ghost" id="btn-rains-carry-next" hidden>ยกมาจากปีถัดไป</button>
+      <button type="button" class="btn" id="btn-rain-edit" hidden>แก้ไขปี</button>
+      <button type="button" class="ghost" id="btn-rain-stop" hidden>เลิกแก้</button>
+      <button type="button" class="ghost" id="btn-rain-close-year" hidden>ปิดปีจำพรรษา</button>
+      <button type="button" class="ghost" id="btn-rain-open-year" hidden>เปิดปีให้แก้</button>
+      <button type="button" class="btn" id="btn-rains-report">รายงานจำพรรษา</button>
+      <button type="button" class="ghost" id="btn-new">เพิ่มรายชื่อ</button>
+      <details class="tool-more">
+        <summary>พิมพ์และไฟล์</summary>
+        <div class="tool-more-menu">
+          <button type="button" class="ghost" id="btn-print">พิมพ์รายชื่อบนจอ</button>
+          <button type="button" class="ghost" id="btn-blank-print">พิมพ์ฟอร์มเปล่า</button>
+          <a class="ghost" id="btn-blank-dl" href="/form-blank.html?download=1" download="form-monk-blank.html">ดาวน์โหลดฟอร์มพิมพ์</a>
+          <a class="ghost" id="btn-blank-xlsx" href="/form-blank.xlsx">ดาวน์โหลด Excel กรอกตรง</a>
+          <button type="button" class="ghost" id="btn-xlsx-load">โหลดจาก Excel</button>
+        </div>
+      </details>
+      <input id="xlsx-import" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+    </div>
   </div>
   <p class="stats" id="stats"></p>
   <div id="list"></div>
+</main>
+<main class="wrap" id="page-duties" hidden>
+  <div class="card">
+    <h2 id="duty-title" style="margin:0 0 6px;font-size:1.15rem">ปฏิบัติศาสนกิจประจำวัน</h2>
+    <p class="hint" id="duty-lead" style="margin:0 0 12px">บันทึกทำวัตรเช้า–เย็นของพระในวัด</p>
+    <div class="duty-kind">
+      <select id="duty-kind" aria-label="เลือกบันทึก">
+        <option value="daily">ปฏิบัติศาสนกิจประจำวัน</option>
+        <option value="event">ปฏิบัติศาสนกิจ</option>
+        <option value="report">รายงานการทำวัตร</option>
+      </select>
+    </div>
+    <p class="msg" id="duty-err"></p>
+    <div id="duty-need-wat" class="empty" hidden>เลือกวัดจากรายงานพระภิกษุก่อน จึงบันทึกได้</div>
+    <div id="duty-event-panel" hidden>
+      <div class="duty-grid">
+        <div>
+          <label>วันที่</label>
+          <button type="button" class="phra-date-face" id="duty-event-face">เลือกวันที่</button>
+          <input type="hidden" id="duty-event-iso">
+        </div>
+        <div class="wide">
+          <label>ข้อมูลงาน</label>
+          <input id="duty-event-title" maxlength="300" placeholder="เช่น ไปตรวจวัด">
+        </div>
+        <div class="wide">
+          <label>สถานที่</label>
+          <input id="duty-event-place" maxlength="200" placeholder="ชื่อวัด หรือสถานที่">
+        </div>
+      </div>
+      <div class="bar">
+        <button type="button" class="btn" id="btn-duty-event-save">บันทึก</button>
+      </div>
+      <div id="duty-event-list"></div>
+    </div>
+    <div id="duty-daily-panel">
+      <div class="duty-grid">
+        <div>
+          <label>วันที่</label>
+          <button type="button" class="phra-date-face" id="duty-daily-face">เลือกวันที่</button>
+          <input type="hidden" id="duty-daily-iso">
+        </div>
+      </div>
+      <div class="duty-sticky">
+        <button type="button" class="ghost" id="btn-duty-daily-load">โหลดรายชื่อ</button>
+        <button type="button" class="btn" id="btn-duty-daily-save">บันทึกทำวัตร</button>
+      </div>
+      <button type="button" class="ghost" id="btn-duty-daily-print">พิมพ์รายงานเดือน · A4 แนวนอน</button>
+      <p class="hint">แตะสถานะเช้า–เย็น · เจ้าอาวาสและไปจำพรรษาวัดอื่นติ๊กยกเว้นไว้</p>
+      <div id="duty-daily-list"></div>
+    </div>
+    <div id="duty-report-panel" hidden>
+      <div class="duty-grid">
+        <div>
+          <label>เดือน</label>
+          <select id="duty-report-month"></select>
+        </div>
+        <div>
+          <label>พ.ศ.</label>
+          <input id="duty-report-year" inputmode="numeric" maxlength="4">
+        </div>
+      </div>
+      <div class="duty-sticky">
+        <button type="button" class="btn" id="btn-duty-report">ดูรายงานเดือน</button>
+        <button type="button" class="ghost" id="btn-duty-report-print">พิมพ์</button>
+      </div>
+      <p class="hint">เลือกเดือน แล้วกดดูรายงาน หรือพิมพ์เลย · ขาดเช้า–เย็น คิดเป็น %</p>
+    </div>
+  </div>
 </main>
 <div id="rains-report">
   <div class="rains-toolbar">
@@ -806,6 +1312,14 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     <button type="button" class="ghost" id="btn-rains-close">ปิด</button>
   </div>
   <div id="rains-report-body"></div>
+</div>
+<div id="duty-month-report">
+  <div class="rains-toolbar">
+    <span class="lvl" id="duty-month-level"></span>
+    <button type="button" class="btn" id="btn-duty-month-print">พิมพ์</button>
+    <button type="button" class="ghost" id="btn-duty-month-close">ปิด</button>
+  </div>
+  <div id="duty-month-report-body"></div>
 </div>
 <section class="wrap" id="page-places" hidden>
   <div class="place-shell">
@@ -906,6 +1420,13 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
           <option value="">เลือกอำเภอก่อน</option>
         </select>
       </div>
+      <div id="user-app-wrap">
+        <label>สิทธิ์การใช้ฐานข้อมูลพระสงฆ์</label>
+        <select id="user-app-scope">
+          <option value="all">ทั้งหมด</option>
+          <option value="duties">เฉพาะปฏิบัติศาสนกิจ</option>
+        </select>
+      </div>
       <div id="user-tambon-wrap" hidden>
         <label>ตำบลคณะสงฆ์</label>
         <input id="user-tambon" maxlength="80" list="user-tambon-list" placeholder="จัดภายหลัง หรือใส่เมื่ออนุมัติระดับตำบล">
@@ -960,6 +1481,31 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
         <input type="hidden" id="id">
         <div id="head-view" class="view-stack tone-teal"></div>
         <button type="button" class="ghost tiny" id="btn-head-edit">แก้ไขข้อมูลพระภิกษุ <span class="en">Edit monk details</span></button>
+        <div id="statusBlock">
+          <label>สถานะ <span class="en">Current status</span></label>
+          <select id="status">
+            <option value="จำพรรษา">จำพรรษา / Resident</option>
+            <option value="ย้ายวัด">ย้ายวัด / Moved</option>
+            <option value="มรณภาพ">มรณภาพ / Passed away</option>
+            <option value="ลาสิกขา">ลาสิกขา / Disrobed</option>
+          </select>
+          <div id="movedToWrap" hidden style="margin-top:8px">
+            <label>วัดที่ย้ายไป <span class="en">Moved to</span></label>
+            <input id="movedToWat" maxlength="160" list="wat-catalog" placeholder="ชื่อวัดปลายทาง">
+          </div>
+          <div id="illWrap" hidden style="margin-top:8px">
+            <label class="ill-bed"><input type="checkbox" id="ill"> อาพาธ <span class="en">Ill</span></label>
+            <div id="illDetail" hidden style="margin-top:8px">
+              <label class="ill-bed"><input type="checkbox" id="illBedridden"> ติดเตียง <span class="en">Bedridden</span></label>
+              <label style="margin-top:8px">รักษาตัวที่ <span class="en">Treatment place</span></label>
+              <select id="illPlace">
+                <option value="วัด">วัด</option>
+                <option value="บ้าน">บ้าน</option>
+                <option value="โรงพยาบาล">โรงพยาบาล</option>
+              </select>
+            </div>
+          </div>
+        </div>
         <div id="head-edit" hidden>
         <div class="grid2">
           <div>
@@ -1064,19 +1610,6 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
         <input type="hidden" id="ordainedOn">
         <div class="readonly" id="ageBox">อายุคำนวณจากวันเกิด หรือบัญชีจำพรรษา · Age from birth date</div>
         <div class="readonly" id="vassaBox">พรรษาคำนวณจากวันอุปสมบทในส่วนที่ 3 · Vassa from part 3</div>
-        <div>
-          <label>สถานะ <span class="en">Current status</span></label>
-            <select id="status">
-            <option value="จำพรรษา">จำพรรษา / Resident</option>
-            <option value="ย้ายวัด">ย้ายวัด / Moved</option>
-            <option value="มรณภาพ">มรณภาพ / Passed away</option>
-            <option value="ลาสิกขา">ลาสิกขา / Disrobed</option>
-            </select>
-          <div id="movedToWrap" hidden style="margin-top:8px">
-            <label>วัดที่ย้ายไป <span class="en">Moved to</span></label>
-            <input id="movedToWat" maxlength="160" list="wat-catalog" placeholder="ชื่อวัดปลายทาง">
-          </div>
-        </div>
         <label>หมายเหตุ <span class="en">Notes</span></label>
         <textarea id="note" rows="2" maxlength="500"></textarea>
         <div style="margin-top:10px">
@@ -1463,6 +1996,10 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
 </div>
 <script>
 (function () {
+  const embedQs = new URLSearchParams(location.search);
+  const embedOn = embedQs.get("embed") === "1";
+  const embedTok = embedQs.get("t") || "";
+  if (embedOn) document.body.classList.add("embed");
   const $ = (id) => document.getElementById(id);
   let rows = [];
   let rainEditYear = 0;
@@ -1606,12 +2143,16 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   }
 
   async function api(path, opt) {
+    const headers = Object.assign(
+      { "Content-Type": "application/json" },
+      embedOn ? { "X-Phra-Embed": "1" } : {},
+      (opt && opt.headers) || {}
+    );
     const res = await fetch("/api" + path, Object.assign({
-      credentials: "same-origin",
-      headers: { "Content-Type": "application/json" }
-    }, opt || {}));
+      credentials: "same-origin"
+    }, opt || {}, { headers }));
     const data = await res.json().catch(function () { return {}; });
-    if (res.status === 401 && path !== "/login" && path !== "/register" && path !== "/status" && path !== "/forgot-password" && path !== "/reset-password" && path.indexOf("/temples/") !== 0) showLogin();
+    if (res.status === 401 && path !== "/login" && path !== "/register" && path !== "/status" && path !== "/forgot-password" && path !== "/reset-password" && path !== "/embed/accept" && path.indexOf("/temples/") !== 0) showLogin();
     if (!res.ok) throw new Error(data.error || "ไม่สำเร็จ");
     return data;
   }
@@ -1650,7 +2191,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     me = null;
     applyAccountPlace = true;
     document.body.classList.add("need-login");
-    document.body.classList.remove("places-on");
+    document.body.classList.remove("places-on", "duties-only");
     $("page-login").hidden = false;
     $("dlg").hidden = true;
     refreshRegisterOpen().then(function () { setAuthScreen("login"); });
@@ -1661,11 +2202,14 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   }
   function applyAccessLocks() {
     if (!me) return;
-    const lv = me.accessLevel;
+    const embedLock = embedOn || !!me.embedLocked;
+    const lv = embedLock ? "wat" : me.accessLevel;
     $("nav-places").hidden = lv === "wat";
     $("nav-users").hidden = lv !== "admin" && lv !== "province" && lv !== "district";
-    $("whoami").textContent = (me.displayName || me.email || me.username) + " · " + (me.accessLabel || "");
-    $("btn-logout").hidden = false;
+    $("whoami").textContent = (me.displayName || me.email || me.username) + " · " + (me.accessLabel || "")
+      + (isDutiesOnlyUser(me) ? " · เฉพาะปฏิบัติศาสนกิจ" : "")
+      + (embedLock && me.watName ? " · " + me.watName : "");
+    $("btn-logout").hidden = !!embedOn;
     const sangha = $("sanghaTambon");
     const wat = $("watName");
     sangha.disabled = lv === "wat" || lv === "tambon";
@@ -1694,48 +2238,62 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     if (distSel) distSel.disabled = lv !== "admin" && lv !== "province";
     if ($("btn-sangha-add")) $("btn-sangha-add").hidden = lv === "tambon";
     if ($("newSanghaName")) $("newSanghaName").disabled = lv === "tambon";
+    if (embedLock) {
+      const sub = document.querySelector(".top small");
+      if (sub) sub.textContent = "พระสงฆ์ของ" + (me.watName || "วัดนี้") + "เท่านั้น";
+    }
+    const dutiesOnly = isDutiesOnlyUser(me);
+    document.body.classList.toggle("duties-only", dutiesOnly);
+    if ($("nav-list")) $("nav-list").hidden = dutiesOnly;
+    if (dutiesOnly) {
+      $("nav-places").hidden = true;
+      $("nav-users").hidden = true;
+      if ($("nav-duties")) $("nav-duties").hidden = false;
+      const sub = document.querySelector(".top small");
+      if (sub) sub.textContent = "ใช้ได้เฉพาะปฏิบัติศาสนกิจ";
+    }
   }
 
-  function showList() {
-    document.body.classList.remove("places-on", "rains-open", "print-rains");
-    $("dlg").hidden = true;
-    $("page-list").hidden = false;
-    $("page-places").hidden = true;
-    $("page-users").hidden = true;
-    $("nav-list").classList.add("on");
-    $("nav-places").classList.remove("on");
-    $("nav-users").classList.remove("on");
+  function isDutiesOnlyUser(u) {
+    return !!(u && u.appScope === "duties");
   }
-  function showForm() {
-    document.body.classList.remove("places-on");
+
+  function hideAppPages() {
+    document.body.classList.remove("places-on", "rains-open", "print-rains", "duty-report-open", "print-duty");
+    $("dlg").hidden = true;
     $("page-list").hidden = true;
     $("page-places").hidden = true;
     $("page-users").hidden = true;
+    if ($("page-duties")) $("page-duties").hidden = true;
+    ["nav-list", "nav-places", "nav-users", "nav-duties"].forEach(function (id) {
+      if ($(id)) $(id).classList.remove("on");
+    });
+  }
+  function showList() {
+    if (isDutiesOnlyUser(me)) return showDuties();
+    hideAppPages();
+    $("page-list").hidden = false;
+    $("nav-list").classList.add("on");
+  }
+  function showForm() {
+    if (isDutiesOnlyUser(me)) return showDuties();
+    hideAppPages();
     $("dlg").hidden = false;
   }
   function showPlaces() {
     if (me && me.accessLevel === "wat") return;
+    hideAppPages();
     document.body.classList.add("places-on");
-    $("dlg").hidden = true;
-    $("page-list").hidden = true;
     $("page-places").hidden = false;
-    $("page-users").hidden = true;
-    $("nav-list").classList.remove("on");
     $("nav-places").classList.add("on");
-    $("nav-users").classList.remove("on");
     loadWatPlaces().catch(function (e) {
       $("sanghaErr").textContent = e.message || "โหลดไม่สำเร็จ";
     });
   }
   function showUsers() {
     if (!me || (me.accessLevel !== "admin" && me.accessLevel !== "province" && me.accessLevel !== "district")) return;
-    document.body.classList.remove("places-on");
-    $("dlg").hidden = true;
-    $("page-list").hidden = true;
-    $("page-places").hidden = true;
+    hideAppPages();
     $("page-users").hidden = false;
-    $("nav-list").classList.remove("on");
-    $("nav-places").classList.remove("on");
     $("nav-users").classList.add("on");
     loadUsers().catch(function (e) {
       const msg = e.message || "โหลดไม่สำเร็จ";
@@ -1744,6 +2302,503 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     });
     if (me.accessLevel === "admin") fillUserProvinces("").catch(function () {});
     loadClosedYears().catch(function () {});
+  }
+
+  let dutySub = "daily";
+  function dutyWatQs() {
+    const wat = (me && me.watName) || ($("watName") && $("watName").value) || "";
+    return wat ? ("watName=" + encodeURIComponent(wat)) : "";
+  }
+  function dutyIsoToday() {
+    const n = new Date();
+    return n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0");
+  }
+  function dutyFaceText(iso) {
+    const p = parseThaiDateParts("", iso || "");
+    const t = formatThaiDateParts(p.day, p.month, p.yearBe).text;
+    return t || "เลือกวันที่";
+  }
+  function setDutyIso(isoId, faceId, iso) {
+    if ($(isoId)) $(isoId).value = iso || "";
+    if ($(faceId)) $(faceId).textContent = dutyFaceText(iso);
+  }
+  function dutyPicked(isoId) {
+    const iso = ($(isoId) && $(isoId).value) || "";
+    return { iso: iso, text: dutyFaceText(iso) };
+  }
+  function fillDutyDatePicks() {
+    const today = dutyIsoToday();
+    if ($("duty-event-iso") && !$("duty-event-iso").value) setDutyIso("duty-event-iso", "duty-event-face", today);
+    else if ($("duty-event-iso")) setDutyIso("duty-event-iso", "duty-event-face", $("duty-event-iso").value);
+    if ($("duty-daily-iso") && !$("duty-daily-iso").value) setDutyIso("duty-daily-iso", "duty-daily-face", today);
+    else if ($("duty-daily-iso")) setDutyIso("duty-daily-iso", "duty-daily-face", $("duty-daily-iso").value);
+  }
+  let phraCalView = { y: 2026, m: 1 };
+  let phraCalTarget = null;
+  function closePhraCal() {
+    if ($("phra-cal")) $("phra-cal").classList.remove("on");
+    phraCalTarget = null;
+  }
+  function lastDayYmd(y, m) {
+    return new Date(y, m, 0).getDate();
+  }
+  function paintPhraCal() {
+    const root = $("phra-cal");
+    if (!root) return;
+    const title = root.querySelector(".phra-cal-title");
+    const grid = root.querySelector(".phra-cal-grid");
+    const y = phraCalView.y, m = phraCalView.m;
+    title.textContent = (THAI_MONTHS_UI[m - 1] || "") + " พ.ศ. " + (y + 543);
+    const start = new Date(y, m - 1, 1).getDay();
+    const last = lastDayYmd(y, m);
+    const prevLast = lastDayYmd(m === 1 ? y - 1 : y, m === 1 ? 12 : m - 1);
+    const picked = phraCalTarget ? phraCalTarget.value : "";
+    const today = dutyIsoToday();
+    const cells = [];
+    for (let i = 0; i < 42; i++) {
+      let cy = y, cm = m, cd = i - start + 1, muted = false;
+      if (cd < 1) {
+        cm = m === 1 ? 12 : m - 1;
+        cy = m === 1 ? y - 1 : y;
+        cd = prevLast + cd;
+        muted = true;
+      } else if (cd > last) {
+        cm = m === 12 ? 1 : m + 1;
+        cy = m === 12 ? y + 1 : y;
+        cd = cd - last;
+        muted = true;
+      }
+      const iso = cy + "-" + String(cm).padStart(2, "0") + "-" + String(cd).padStart(2, "0");
+      const cls = ["phra-cal-day"];
+      if (muted) cls.push("muted");
+      if (iso === today) cls.push("today");
+      if (iso === picked) cls.push("picked");
+      cells.push('<button type="button" class="' + cls.join(" ") + '" data-iso="' + iso + '">' + cd + "</button>");
+    }
+    grid.innerHTML = cells.join("");
+  }
+  function placePhraCal(anchor) {
+    const panel = document.querySelector("#phra-cal .phra-cal-panel");
+    if (!panel || !anchor) return;
+    const r = anchor.getBoundingClientRect();
+    const w = panel.offsetWidth || 360;
+    const h = panel.offsetHeight || 340;
+    let left = r.left;
+    let top = r.bottom + 6;
+    if (left + w > window.innerWidth - 8) left = Math.max(8, window.innerWidth - w - 8);
+    if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+    panel.style.left = left + "px";
+    panel.style.top = top + "px";
+  }
+  function ensurePhraCal() {
+    if ($("phra-cal")) return $("phra-cal");
+    const root = document.createElement("div");
+    root.id = "phra-cal";
+    root.innerHTML = '<div class="phra-cal-back" data-cal="close"></div>' +
+      '<div class="phra-cal-panel" role="dialog" aria-label="เลือกวันที่">' +
+      '<div class="phra-cal-head">' +
+      '<button type="button" class="phra-cal-nav" data-cal="prev">‹</button>' +
+      '<div class="phra-cal-title"></div>' +
+      '<button type="button" class="phra-cal-nav" data-cal="next">›</button></div>' +
+      '<div class="phra-cal-dows"><span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span></div>' +
+      '<div class="phra-cal-grid"></div>' +
+      '<div class="phra-cal-foot">' +
+      '<button type="button" class="ghost" data-cal="today">วันนี้</button>' +
+      '<button type="button" class="ghost" data-cal="close">ปิด</button>' +
+      "</div></div>";
+    document.body.appendChild(root);
+    root.onclick = function (ev) {
+      const t = ev.target;
+      if (!t || !t.getAttribute) return;
+      const iso = t.getAttribute("data-iso");
+      const act = t.getAttribute("data-cal");
+      if (iso) {
+        if (phraCalTarget) {
+          phraCalTarget.value = iso;
+          const faceId = phraCalTarget.id === "duty-daily-iso" ? "duty-daily-face" : "duty-event-face";
+          setDutyIso(phraCalTarget.id, faceId, iso);
+          if (phraCalTarget.id === "duty-daily-iso") loadDutyDaily();
+        }
+        closePhraCal();
+        return;
+      }
+      if (act === "close") { closePhraCal(); return; }
+      if (act === "prev" || act === "next") {
+        let y = phraCalView.y, m = phraCalView.m + (act === "prev" ? -1 : 1);
+        if (m < 1) { m = 12; y -= 1; }
+        if (m > 12) { m = 1; y += 1; }
+        phraCalView = { y: y, m: m };
+        paintPhraCal();
+        return;
+      }
+      if (act === "today") {
+        const today = dutyIsoToday();
+        const p = today.split("-").map(Number);
+        phraCalView = { y: p[0], m: p[1] };
+        if (phraCalTarget) {
+          phraCalTarget.value = today;
+          const faceId = phraCalTarget.id === "duty-daily-iso" ? "duty-daily-face" : "duty-event-face";
+          setDutyIso(phraCalTarget.id, faceId, today);
+          if (phraCalTarget.id === "duty-daily-iso") loadDutyDaily();
+        }
+        closePhraCal();
+      }
+    };
+    return root;
+  }
+  function openPhraCal(isoId, face) {
+    const el = $(isoId);
+    if (!el) return;
+    const iso = el.value || dutyIsoToday();
+    const p = iso.split("-").map(Number);
+    phraCalView = { y: p[0], m: p[1] };
+    phraCalTarget = el;
+    const root = ensurePhraCal();
+    root.classList.add("on");
+    paintPhraCal();
+    placePhraCal(face || el);
+  }
+  function showDuties() {
+    hideAppPages();
+    $("page-duties").hidden = false;
+    $("nav-duties").classList.add("on");
+    fillDutyDatePicks();
+    setDutySub(dutySub);
+  }
+  function setDutySub(which) {
+    dutySub = which === "event" ? "event" : which === "report" ? "report" : "daily";
+    if ($("duty-kind") && $("duty-kind").value !== dutySub) $("duty-kind").value = dutySub;
+    if ($("duty-title")) {
+      $("duty-title").textContent = dutySub === "event"
+        ? "ปฏิบัติศาสนกิจ"
+        : dutySub === "report" ? "รายงานการทำวัตร" : "ปฏิบัติศาสนกิจประจำวัน";
+    }
+    if ($("duty-lead")) {
+      $("duty-lead").textContent = dutySub === "event"
+        ? "บันทึกงานที่ไปทำ เช่น ไปตรวจวัด"
+        : dutySub === "report"
+          ? "นับขาดทำวัตรเช้า–เย็นของเดือน แล้วคิดเป็น %"
+          : "บันทึกทำวัตรเช้า–เย็นของพระในวัด";
+    }
+    if ($("duty-event-panel")) $("duty-event-panel").hidden = dutySub !== "event";
+    if ($("duty-daily-panel")) $("duty-daily-panel").hidden = dutySub !== "daily";
+    if ($("duty-report-panel")) $("duty-report-panel").hidden = dutySub !== "report";
+    if ($("duty-err")) $("duty-err").textContent = "";
+    if (dutySub === "event") loadDutyEvents();
+    else if (dutySub === "report") fillDutyReportPick();
+    else loadDutyDaily();
+  }
+  function dutyNeedWat(need) {
+    if ($("duty-need-wat")) $("duty-need-wat").hidden = !need;
+    if ($("duty-event-panel")) $("duty-event-panel").hidden = need || dutySub !== "event";
+    if ($("duty-daily-panel")) $("duty-daily-panel").hidden = need || dutySub !== "daily";
+    if ($("duty-report-panel")) $("duty-report-panel").hidden = need || dutySub !== "report";
+  }
+  function fmtDutyDate(iso, text) {
+    if (text) return text;
+    const p = parseThaiDateParts("", iso || "");
+    if (!p.yearBe) return iso || "";
+    return formatThaiDateParts(p.day, p.month, p.yearBe).text;
+  }
+  async function loadDutyEvents() {
+    if ($("duty-err")) $("duty-err").textContent = "";
+    const qs = dutyWatQs();
+    try {
+      const data = await api("/duties/events" + (qs ? "?" + qs : ""));
+      dutyNeedWat(!!data.needWat);
+      if (data.needWat) return;
+      const rows = data.rows || [];
+      const box = $("duty-event-list");
+      if (!box) return;
+      if (!rows.length) {
+        box.innerHTML = '<div class="empty" style="margin-top:12px">ยังไม่มีรายการ</div>';
+        return;
+      }
+      box.innerHTML = '<table class="rpt"><thead><tr><th>วันที่</th><th>ข้อมูลงาน</th><th>สถานที่</th><th></th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          return "<tr><td>" + esc(fmtDutyDate(r.dutyDate, r.dateText)) + "</td><td>" + esc(r.title) + "</td><td>" +
+            esc(r.place || "") + '</td><td><button type="button" class="ghost tiny" data-duty-del="' + r.id + '">ลบ</button></td></tr>';
+        }).join("") + "</tbody></table>";
+      box.querySelectorAll("[data-duty-del]").forEach(function (btn) {
+        btn.onclick = function () { deleteDutyEvent(btn.getAttribute("data-duty-del")); };
+      });
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "โหลดไม่สำเร็จ";
+    }
+  }
+  async function saveDutyEvent() {
+    if ($("duty-err")) $("duty-err").textContent = "";
+    const d = dutyPicked("duty-event-iso");
+    try {
+      await api("/duties/events", {
+        method: "POST",
+        body: JSON.stringify({
+          watName: (me && me.watName) || ($("watName") && $("watName").value) || "",
+          dutyDate: d.iso,
+          dateText: d.text,
+          title: $("duty-event-title").value,
+          place: $("duty-event-place").value
+        })
+      });
+      $("duty-event-title").value = "";
+      $("duty-event-place").value = "";
+      await loadDutyEvents();
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "บันทึกไม่สำเร็จ";
+    }
+  }
+  async function deleteDutyEvent(id) {
+    if (!confirm("ลบรายการนี้?")) return;
+    try {
+      await api("/duties/events/" + id, { method: "DELETE" });
+      await loadDutyEvents();
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "ลบไม่สำเร็จ";
+    }
+  }
+  function attendSeg(name, val) {
+    const opts = ["ตรงเวลา", "สาย", "ขาด", "ลา"];
+    return '<div class="duty-seg" data-f="' + name + '" data-val="' + esc(val || "") + '">' +
+      opts.map(function (s) {
+        return '<button type="button" class="duty-chip' + (s === val ? " on" : "") + '" data-v="' + s + '">' + s + "</button>";
+      }).join("") + "</div>";
+  }
+  function bindDutyCard(card) {
+    const ex = card.querySelector("[data-f='exempt']");
+    const syncLeave = function (name) {
+      const seg = card.querySelector(".duty-seg[data-f='" + name + "']");
+      const leave = card.querySelector("[data-f='" + name + "Leave']");
+      if (leave) leave.hidden = !seg || seg.getAttribute("data-val") !== "ลา";
+    };
+    card.querySelectorAll(".duty-seg").forEach(function (seg) {
+      seg.onclick = function (ev) {
+        const btn = ev.target.closest(".duty-chip");
+        if (!btn || card.classList.contains("duty-off")) return;
+        const v = btn.getAttribute("data-v") || "";
+        const cur = seg.getAttribute("data-val") || "";
+        const next = cur === v ? "" : v;
+        seg.setAttribute("data-val", next);
+        seg.querySelectorAll(".duty-chip").forEach(function (b) {
+          b.classList.toggle("on", b.getAttribute("data-v") === next);
+        });
+        syncLeave(seg.getAttribute("data-f"));
+      };
+    });
+    const syncExempt = function () {
+      const on = !!(ex && ex.checked);
+      card.classList.toggle("duty-off", on);
+      const times = card.querySelector(".duty-times");
+      if (times) times.hidden = on;
+    };
+    if (ex) {
+      ex.onchange = function () {
+        syncExempt();
+        saveDutyDaily({ quiet: true });
+      };
+    }
+    syncExempt();
+    syncLeave("morning");
+    syncLeave("evening");
+  }
+  async function loadDutyDaily() {
+    if ($("duty-err")) $("duty-err").textContent = "";
+    const d = dutyPicked("duty-daily-iso");
+    const bits = [];
+    const watQs = dutyWatQs();
+    if (watQs) bits.push(watQs);
+    if (d.iso) bits.push("dutyDate=" + encodeURIComponent(d.iso));
+    try {
+      const data = await api("/duties/daily" + (bits.length ? "?" + bits.join("&") : ""));
+      dutyNeedWat(!!data.needWat);
+      const box = $("duty-daily-list");
+      if (!box) return;
+      if (data.needWat) return;
+      if (data.needDate) {
+        box.innerHTML = '<div class="empty" style="margin-top:12px">ใส่วันที่แล้วกดโหลดรายชื่อ</div>';
+        return;
+      }
+      const rows = data.rows || [];
+      if (!rows.length) {
+        box.innerHTML = '<div class="empty" style="margin-top:12px">ยังไม่มีรายชื่อจำพรรษาของวัดนี้</div>';
+        return;
+      }
+      box.innerHTML = rows.map(function (r) {
+        const who = String(r.displayName || "").replace(/\s+\([^)]+\)\s*$/, "");
+        const bits = [];
+        if (r.abbot) bits.push("เจ้าอาวาส");
+        if (r.away) bits.push("ไปจำพรรษาที่อื่น" + (r.awayWat ? " · " + esc(r.awayWat) : ""));
+        const note = bits.length ? '<span class="away-note">' + bits.join(" · ") + "</span>" : "";
+        return '<div class="duty-card" data-monk="' + r.monkId + '">' +
+          '<div class="duty-card-h"><div><b>' + esc(who) + "</b>" + note + "</div>" +
+          '<label class="chk"><input type="checkbox" data-f="exempt"' + (r.exempt ? " checked" : "") + "> ยกเว้น</label></div>" +
+          '<div class="duty-times">' +
+          '<div class="duty-slot"><span class="duty-when">เช้า</span>' + attendSeg("morning", r.morning) +
+          '<input class="leave-in" data-f="morningLeave" maxlength="200" placeholder="เหตุผลลา"' +
+          (r.morning === "ลา" ? "" : " hidden") + ' value="' + esc(r.morningLeave || "") + '"></div>' +
+          '<div class="duty-slot"><span class="duty-when">เย็น</span>' + attendSeg("evening", r.evening) +
+          '<input class="leave-in" data-f="eveningLeave" maxlength="200" placeholder="เหตุผลลา"' +
+          (r.evening === "ลา" ? "" : " hidden") + ' value="' + esc(r.eveningLeave || "") + '"></div>' +
+          "</div></div>";
+      }).join("");
+      box.querySelectorAll("[data-monk]").forEach(bindDutyCard);
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "โหลดไม่สำเร็จ";
+    }
+  }
+  async function saveDutyDaily(opts) {
+    if ($("duty-err")) $("duty-err").textContent = "";
+    const d = dutyPicked("duty-daily-iso");
+    const rows = [];
+    document.querySelectorAll("#duty-daily-list [data-monk]").forEach(function (card) {
+      const g = function (n) {
+        const seg = card.querySelector(".duty-seg[data-f='" + n + "']");
+        if (seg) return seg.getAttribute("data-val") || "";
+        const el = card.querySelector("[data-f='" + n + "']");
+        return el ? el.value : "";
+      };
+      rows.push({
+        monkId: Number(card.getAttribute("data-monk")),
+        morning: g("morning"),
+        evening: g("evening"),
+        morningLeave: g("morningLeave"),
+        eveningLeave: g("eveningLeave"),
+        exempt: !!(card.querySelector("[data-f='exempt']") && card.querySelector("[data-f='exempt']").checked)
+      });
+    });
+    const btn = $("btn-duty-daily-save");
+    try {
+      await api("/duties/daily", {
+        method: "PUT",
+        body: JSON.stringify({
+          watName: (me && me.watName) || ($("watName") && $("watName").value) || "",
+          dutyDate: d.iso,
+          rows: rows
+        })
+      });
+      if (!(opts && opts.quiet)) {
+        pulseDutySaveBtn(btn, true);
+        await loadDutyDaily();
+      }
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "บันทึกไม่สำเร็จ";
+    }
+  }
+  function pulseDutySaveBtn(btn, ok) {
+    if (!btn) return;
+    btn.classList.add("duty-press");
+    clearTimeout(btn._pressT);
+    btn._pressT = setTimeout(function () { btn.classList.remove("duty-press"); }, 140);
+    if (!ok) return;
+    const old = btn.getAttribute("data-label") || btn.textContent;
+    btn.setAttribute("data-label", old);
+    btn.textContent = "บันทึกแล้ว";
+    btn.classList.add("duty-saved");
+    clearTimeout(btn._savedT);
+    btn._savedT = setTimeout(function () {
+      btn.classList.remove("duty-saved");
+      btn.textContent = btn.getAttribute("data-label") || "บันทึกทำวัตร";
+    }, 900);
+  }
+  function fillDutyReportPick() {
+    const sel = $("duty-report-month");
+    if (sel && !sel.options.length) {
+      THAI_MONTHS_UI.forEach(function (name, i) {
+        const opt = document.createElement("option");
+        opt.value = String(i + 1);
+        opt.textContent = name;
+        sel.appendChild(opt);
+      });
+    }
+    const iso = ($("duty-daily-iso") && $("duty-daily-iso").value) || dutyIsoToday();
+    const p = parseThaiDateParts("", iso);
+    if ($("duty-report-year")) $("duty-report-year").value = String(p.yearBe || "");
+    if (sel && p.month) sel.value = String(p.month);
+  }
+  function dutyWhoPrint(name) {
+    return String(name || "").replace(/\s+\([^)]+\)\s*$/, "");
+  }
+  function dutyPctText(v) {
+    return v == null || v === "" ? "—" : Number(v).toFixed(1);
+  }
+  function dutyMissTd(n) {
+    return "<td class=\"num" + (Number(n) > 0 ? " miss" : "") + "\">" + Number(n || 0) + "</td>";
+  }
+  function closeDutyMonthReport() {
+    document.body.classList.remove("duty-report-open", "print-duty");
+  }
+  function buildDutyMonthSheet(data) {
+    const rows = data.rows || [];
+    const tot = data.totals || {};
+    const asOfP = parseThaiDateParts("", data.asOf || "");
+    const asOfText = formatThaiDateParts(asOfP.day, asOfP.month, asOfP.yearBe).text;
+    const countedNote = data.countedDays < data.daysInMonth
+      ? "นับถึงวันที่ " + asOfText + " · " + data.countedDays + " วัน"
+      : "ทั้งเดือน " + data.daysInMonth + " วัน";
+    const body = rows.map(function (r, i) {
+      return "<tr><td class=\"n\">" + (i + 1) + "</td><td>" + esc(dutyWhoPrint(r.displayName)) + "</td>" +
+        dutyMissTd(r.morning && r.morning.miss) +
+        "<td class=\"num\">" + dutyPctText(r.morning && r.morning.pctMiss) + "</td>" +
+        dutyMissTd(r.evening && r.evening.miss) +
+        "<td class=\"num\">" + dutyPctText(r.evening && r.evening.pctMiss) + "</td>" +
+        "<td>" + esc(r.note || "") + "</td></tr>";
+    }).join("");
+    const totRow = rows.length
+      ? "<tr><td></td><td>รวม</td>" +
+        dutyMissTd(tot.morning && tot.morning.miss) +
+        "<td class=\"num\">" + dutyPctText(tot.morning && tot.morning.pctMiss) + "</td>" +
+        dutyMissTd(tot.evening && tot.evening.miss) +
+        "<td class=\"num\">" + dutyPctText(tot.evening && tot.evening.pctMiss) + "</td>" +
+        "<td></td></tr>"
+      : "";
+    const empty = rows.length ? "" : '<tr><td colspan="7" class="num">ยังไม่มีรายชื่อจำพรรษาของวัดนี้</td></tr>';
+    return '<div class="rains-head"><p class="t1">รายงานการทำวัตร</p>' +
+      '<p class="t2">' + esc(data.watName || "") + "</p>" +
+      '<p class="t3">ประจำเดือน' + esc(data.monthName || "") + " พ.ศ. " + esc(String(data.yearBe || "")) + "</p></div>" +
+      '<table class="duty-sheet"><col class="c-no"><col class="c-name"><col class="c-miss"><col class="c-pct"><col class="c-miss"><col class="c-pct"><col class="c-note">' +
+      "<thead><tr><th>ที่</th><th>ชื่อ</th><th>ขาดเช้า<br>วัน</th><th>%ขาดเช้า</th><th>ขาดเย็น<br>วัน</th><th>%ขาดเย็น</th><th>หมายเหตุ</th></tr></thead>" +
+      "<tbody>" + (body || empty) + "</tbody>" +
+      (totRow ? "<tfoot>" + totRow + "</tfoot>" : "") + "</table>" +
+      '<p class="rains-foot">' + countedNote +
+      " · ขาด = ไม่มาหรือยังไม่ลง · ลาและยกเว้นไม่นับเป็นขาด · % = ขาด ÷ วันที่ต้องทำวัตร</p>";
+  }
+  async function openDutyMonthReport() {
+    if ($("duty-err")) $("duty-err").textContent = "";
+    const yearBe = Number($("duty-report-year") && $("duty-report-year").value);
+    const month = Number($("duty-report-month") && $("duty-report-month").value);
+    if (!yearBe || !month) {
+      if ($("duty-err")) $("duty-err").textContent = "เลือกเดือน";
+      return;
+    }
+    const bits = [];
+    const watQs = dutyWatQs();
+    if (watQs) bits.push(watQs);
+    bits.push("yearBe=" + encodeURIComponent(String(yearBe)));
+    bits.push("month=" + encodeURIComponent(String(month)));
+    try {
+      const data = await api("/duties/month?" + bits.join("&"));
+      dutyNeedWat(!!data.needWat);
+      if (data.needWat) return;
+      if ($("duty-month-level")) {
+        $("duty-month-level").textContent = (data.watName || "") + " · " + (data.monthName || "") + " " + data.yearBe;
+      }
+      if ($("duty-month-report-body")) $("duty-month-report-body").innerHTML = buildDutyMonthSheet(data);
+      document.body.classList.add("duty-report-open");
+    } catch (e) {
+      if ($("duty-err")) $("duty-err").textContent = e.message || "สร้างรายงานไม่สำเร็จ";
+    }
+  }
+  function printDutyMonth() {
+    document.body.classList.add("print-duty");
+    var done = function () {
+      window.removeEventListener("afterprint", done);
+      document.body.classList.remove("print-duty");
+    };
+    window.addEventListener("afterprint", done);
+    setTimeout(function () { window.print(); }, 50);
+  }
+  async function openDutyMonthReportAndPrint() {
+    await openDutyMonthReport();
+    if (document.body.classList.contains("duty-report-open")) printDutyMonth();
   }
 
   function collectBio() {
@@ -2411,7 +3466,15 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     const chaya = idVal("chayaPali");
     const enName = bioVal("englishName");
     const dest = idVal("movedToWat");
-    const statusLabel = idVal("status") === "ย้ายวัด" && dest ? "ย้ายวัด · " + dest : idVal("status");
+    const st = idVal("status") === "อาพาธ" ? "จำพรรษา" : idVal("status");
+    const illOn = ($("ill") && $("ill").checked) || idVal("status") === "อาพาธ";
+    const illBits = illOn
+      ? ["อาพาธ", $("illBedridden") && $("illBedridden").checked ? "ติดเตียง" : "", ($("illPlace") && $("illPlace").value) || ""]
+        .filter(Boolean).join(" · ")
+      : "";
+    const statusLabel = st === "ย้ายวัด" && dest
+      ? "ย้ายวัด · " + dest
+      : (illBits && st === "จำพรรษา" ? "จำพรรษา · " + illBits : st);
     const tags = [idVal("personType"), idVal("nikaya"), idVal("rankKindField"), idVal("title"), statusLabel]
       .filter(Boolean);
     const hero = (name || chaya || enName || civil || tags.length)
@@ -2421,7 +3484,9 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
         (enName ? '<div class="ch">' + esc(enName) + "</div>" : "") +
         (civil ? '<div class="cv">(' + esc(civil) + ")</div>" : "") +
         (tags.length ? '<div class="view-tags">' + tags.map(function (t) {
-          const stc = t.indexOf("มรณภาพ") === 0 ? " st-dead" : (t.indexOf("จำพรรษา") === 0 ? " st-resident" : "");
+          const stc = t.indexOf("มรณภาพ") === 0 ? " st-dead"
+            : (t.indexOf("อาพาธ") >= 0 ? " st-ill"
+              : (t.indexOf("จำพรรษา") === 0 ? " st-resident" : ""));
           return '<span class="view-tag' + stc + '">' + esc(t) + "</span>";
         }).join("") + "</div>" : "") +
         "</div>"
@@ -2954,9 +4019,18 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   }
   function listStatusText(m) {
     if (isPendingRain(m.rainKindYear)) return "ยังไม่มา";
-    const st = m.status || "จำพรรษา";
+    const raw = m.status || "จำพรรษา";
+    const st = raw === "อาพาธ" ? "จำพรรษา" : raw;
+    const ill = !!(m.ill || raw === "อาพาธ" || (m.bio && m.bio.ill));
     const dest = m.movedToWat || (m.bio && m.bio.movedToWat) || "";
     if (st === "ย้ายวัด") return dest ? "ย้ายวัด · " + dest : "ย้ายวัด";
+    if (ill && st === "จำพรรษา") {
+      const bits = ["จำพรรษา", "อาพาธ"];
+      if (m.illBedridden || (m.bio && m.bio.illBedridden)) bits.push("ติดเตียง");
+      const place = m.illPlace || (m.bio && m.bio.illPlace) || "";
+      if (place) bits.push(place);
+      return bits.join(" · ");
+    }
     return st;
   }
   function yearBeFromAny(text, iso) {
@@ -3259,7 +4333,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     if (!editing || !Number(year)) return false;
     if (Number(year) !== rainEditYear) return false;
     const st = ($("status") && $("status").value) || (lastMonk && lastMonk.status) || "จำพรรษา";
-    if (st !== "จำพรรษา") return false;
+    if (st !== "จำพรรษา" && st !== "อาพาธ") return false;
     const origin = originWatNow();
     const rain = rainYearRow(year);
     const rainWat = rain && rain.watName || "";
@@ -3794,6 +4868,22 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     const wrap = $("movedToWrap");
     if (!wrap) return;
     wrap.hidden = !($("status") && $("status").value === "ย้ายวัด");
+    toggleIllWrap();
+  }
+  function toggleIllWrap() {
+    const wrap = $("illWrap");
+    if (!wrap) return;
+    const on = $("status") && $("status").value === "จำพรรษา";
+    wrap.hidden = !on;
+    if (!on && $("ill")) $("ill").checked = false;
+    toggleIllDetail();
+  }
+  function toggleIllDetail() {
+    const detail = $("illDetail");
+    if (!detail) return;
+    const on = $("status") && $("status").value === "จำพรรษา" && $("ill") && $("ill").checked;
+    detail.hidden = !on;
+    if (on && $("illPlace") && !$("illPlace").value) $("illPlace").value = "วัด";
   }
   function lastMoveLeftHome(last, dest, home) {
     if (!last || last.kind !== "ย้ายสังกัด") return false;
@@ -4934,8 +6024,12 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     showMainWatPick();
     $("ordainedOn").value = (m && m.ordainedOn) || "";
     fillAgeVassaBoxes();
-    $("status").value = (m && m.status) || "จำพรรษา";
+    const stRaw = (m && m.status) || "จำพรรษา";
+    $("status").value = stRaw === "อาพาธ" ? "จำพรรษา" : stRaw;
     if ($("movedToWat")) $("movedToWat").value = (m && (m.movedToWat || (m.bio && m.bio.movedToWat))) || "";
+    if ($("ill")) $("ill").checked = !!(m && (m.ill || stRaw === "อาพาธ" || (m.bio && m.bio.ill)));
+    if ($("illBedridden")) $("illBedridden").checked = !!(m && (m.illBedridden || (m.bio && m.bio.illBedridden)));
+    if ($("illPlace")) $("illPlace").value = (m && (m.illPlace || (m.bio && m.bio.illPlace))) || "วัด";
     toggleMovedToWrap();
     nakthamShown = keysFromBio(NAKTHAM_LEVELS, m && m.bio);
     paliShown = keysFromBio(PALI_LEVELS, m && m.bio);
@@ -5114,7 +6208,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
         (function () {
           const pendingN = shown.filter(function (m) { return isPendingRain(m.rainKindYear); }).length;
           const sc = reportMeta.statusCounts || {};
-          const bits = ["จำพรรษา", "ย้ายวัด", "ลาสิกขา", "มรณภาพ"].map(function (s) {
+          const bits = ["จำพรรษา", "อาพาธ", "ย้ายวัด", "ลาสิกขา", "มรณภาพ"].map(function (s) {
             let n = sc[s] || 0;
             if (s === "จำพรรษา") n = Math.max(0, n - pendingN);
             return n ? s + " " + n : "";
@@ -5175,8 +6269,8 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
           && originWat
           && rainWat
           && normWatPick(originWat) !== normWatPick(rainWat)
-          && st === "จำพรรษา";
-        const rainBtns = listYearUnlocked() && listYear && st === "จำพรรษา"
+          && (st === "จำพรรษา" || st === "อาพาธ");
+        const rainBtns = listYearUnlocked() && listYear && (st === "จำพรรษา" || st === "อาพาธ")
           ? (pending
             ? (listYear >= nowYearBe()
               ? '<button type="button" class="ghost tiny rain-act" data-rain-act="present" data-id="' + m.id + '">มาแล้ว</button>'
@@ -5197,7 +6291,10 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
         const group = m.sanghaTambon || "(ยังไม่ระบุตำบลคณะสงฆ์)";
         const prev = i ? (shown[i - 1].sanghaTambon || "(ยังไม่ระบุตำบลคณะสงฆ์)") : "";
         const stText = listStatusText(m);
-        const stClass = st === "มรณภาพ" ? "st-dead" : (pending ? "st-pending" : (st === "จำพรรษา" ? "st-resident" : ""));
+        const illOn = !!(m.ill || st === "อาพาธ" || (m.bio && m.bio.ill));
+        const stClass = st === "มรณภาพ" ? "st-dead"
+          : (illOn ? "st-ill"
+            : (pending ? "st-pending" : (st === "จำพรรษา" || st === "อาพาธ" ? "st-resident" : "")));
         const head = (!$("sanghaTambon").value && group !== prev)
           ? '<tr class="g"><td colspan="9">ตำบลคณะสงฆ์ ' + esc(group) + "</td></tr>"
           : "";
@@ -5477,6 +6574,9 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     const s = v == null ? "" : String(v);
     return esc(s === "-" ? "" : s);
   }
+  function rainsNameCell(v) {
+    return rainsCell(v).replace(/ /g, "&nbsp;");
+  }
   function buildRainsSheet(header, list, meta) {
     const monks = meta && meta.monks != null
       ? meta.monks
@@ -5485,8 +6585,8 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     const body = list.map(function (m, i) {
       const f = m.rainsForm || {};
       return "<tr><td>" + (i + 1) + "</td>" +
-        "<td class=\"name\">" + rainsCell(f.name) + "</td>" +
-        "<td class=\"chaya\">" + rainsCell(f.chaya) + "</td>" +
+        "<td class=\"name\">" + rainsNameCell(f.name) + "</td>" +
+        "<td class=\"chaya\">" + rainsNameCell(f.chaya) + "</td>" +
         "<td>" + rainsCell(f.surname) + "</td>" +
         "<td>" + rainsCell(f.age) + "</td>" +
         "<td>" + rainsCell(f.vassa) + "</td>" +
@@ -5509,9 +6609,15 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
       '<p class="t1">' + esc(header.line1 || "บัญชีรายชื่อพระภิกษุ-สามเณร อยู่จำพรรษา") + "</p>" +
       '<p class="t2">' + esc(header.line2 || "") + "</p>" +
       '<p class="t3">' + esc(header.line3 || "") + "</p></div>" +
-      '<table class="rains-sheet"><thead><tr>' +
+      '<table class="rains-sheet"><colgroup>' +
+      '<col class="c-no"><col class="c-name"><col class="c-chaya"><col class="c-sur">' +
+      '<col class="c-age"><col class="c-vassa"><col class="c-year"><col class="c-bprov">' +
+      '<col class="c-sec"><col class="c-wat"><col class="c-place">' +
+      '<col class="c-nak"><col class="c-year"><col class="c-school"><col class="c-prov">' +
+      '<col class="c-pali"><col class="c-year"><col class="c-school"><col class="c-prov">' +
+      '<col class="c-note"></colgroup><thead><tr>' +
       '<th rowspan="2">เลขที่</th><th rowspan="2">ชื่อ</th><th rowspan="2">ฉายา</th><th rowspan="2">นามสกุล</th>' +
-      '<th rowspan="2">อายุ</th><th rowspan="2">พรรษา</th><th rowspan="2">เกิด พ.ศ.</th><th rowspan="2">เกิดที่จังหวัด</th>' +
+      '<th rowspan="2">อายุ</th><th rowspan="2">พรรษา</th><th rowspan="2">เกิด พ.ศ.</th><th rowspan="2">เกิดที่<br>จังหวัด</th>' +
       '<th>ความรู้</th><th colspan="2">สังกัดอยู่</th><th colspan="8">ความรู้เมื่อบวชแล้ว</th>' +
       '<th rowspan="2">หมายเหตุ</th></tr><tr>' +
       "<th>สามัญ</th><th>วัด</th><th>ตำบล</th><th>นธ.</th><th>พ.ศ.</th><th>สำนักเรียน</th><th>จังหวัด</th>" +
@@ -5550,7 +6656,15 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
       alert(err.message || "สร้างรายงานไม่สำเร็จ");
     }
   }
-  $("btn-print").onclick = function () { window.print(); };
+  $("btn-print").onclick = function () {
+    const more = document.querySelector(".tool-more");
+    if (more) more.open = false;
+    window.print();
+  };
+  document.addEventListener("click", function (e) {
+    const more = document.querySelector(".tool-more");
+    if (more && more.open && !more.contains(e.target)) more.open = false;
+  });
   $("btn-rains-report").onclick = function () { openRainsReport(); };
   function carryFilterQs(year, fromYear) {
     const qs = ["yearBe=" + encodeURIComponent(year)];
@@ -5696,7 +6810,9 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     setTimeout(function () { window.print(); }, 50);
   };
   document.addEventListener("keydown", function (ev) {
-    if (ev.key === "Escape" && document.body.classList.contains("rains-open")) closeRainsReport();
+    if (ev.key !== "Escape") return;
+    if (document.body.classList.contains("rains-open")) closeRainsReport();
+    if (document.body.classList.contains("duty-report-open")) closeDutyMonthReport();
   });
   $("btn-blank-print").onclick = function () {
     window.open("/form-blank.html?print=1", "_blank");
@@ -5753,10 +6869,41 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   };
   $("btn-new").onclick = function () { fill(null); };
   $("nav-list").onclick = function () { showList(); };
+  $("nav-duties").onclick = function () { showDuties(); };
   $("nav-places").onclick = function () { showPlaces(); };
   $("nav-users").onclick = function () { showUsers(); };
+  $("duty-kind").onchange = function () { setDutySub($("duty-kind").value); };
+  $("btn-duty-event-save").onclick = function () { saveDutyEvent(); };
+  $("btn-duty-daily-load").onclick = function () { loadDutyDaily(); };
+  $("btn-duty-daily-save").onclick = function () { saveDutyDaily(); };
+  if ($("btn-duty-daily-print")) $("btn-duty-daily-print").onclick = function () {
+    fillDutyReportPick();
+    openDutyMonthReportAndPrint();
+  };
+  if ($("btn-duty-daily-save")) {
+    $("btn-duty-daily-save").addEventListener("pointerdown", function () {
+      this.classList.add("duty-press");
+    });
+    $("btn-duty-daily-save").addEventListener("pointerup", function () {
+      const btn = this;
+      setTimeout(function () { btn.classList.remove("duty-press"); }, 90);
+    });
+    $("btn-duty-daily-save").addEventListener("pointerleave", function () {
+      this.classList.remove("duty-press");
+    });
+  }
+  if ($("btn-duty-report")) $("btn-duty-report").onclick = function () { openDutyMonthReport(); };
+  if ($("btn-duty-report-print")) $("btn-duty-report-print").onclick = function () { openDutyMonthReportAndPrint(); };
+  if ($("btn-duty-month-close")) $("btn-duty-month-close").onclick = function () { closeDutyMonthReport(); };
+  if ($("btn-duty-month-print")) $("btn-duty-month-print").onclick = function () { printDutyMonth(); };
+  $("duty-event-face").onclick = function () { openPhraCal("duty-event-iso", $("duty-event-face")); };
+  $("duty-daily-face").onclick = function () { openPhraCal("duty-daily-iso", $("duty-daily-face")); };
   $("btn-logout").onclick = async function () {
     try { await api("/logout", { method: "POST", body: "{}" }); } catch (e) {}
+    if (document.body.classList.contains("embed")) {
+      showLogin();
+      return;
+    }
     location.replace("https://wat-accounting.onrender.com/hub");
   };
   $("login-form").onsubmit = async function (ev) {
@@ -5953,6 +7100,8 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     $("user-district-wrap").hidden = lv === "admin" || lv === "province";
     $("user-wat-wrap").hidden = lv !== "wat";
     $("user-tambon-wrap").hidden = lv !== "tambon";
+    if ($("user-app-wrap")) $("user-app-wrap").hidden = lv !== "wat";
+    if (lv !== "wat" && $("user-app-scope")) $("user-app-scope").value = "all";
   }
   async function fillUserProvinces(keep) {
     const sel = $("user-province");
@@ -5978,6 +7127,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     $("user-district").innerHTML = '<option value="">เลือกจังหวัดก่อน</option>';
     $("user-tambon").value = "";
     $("user-province").value = "";
+    if ($("user-app-scope")) $("user-app-scope").value = "all";
     $("user-err").textContent = "";
     toggleUserScopeFields();
   }
@@ -5987,6 +7137,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     $("user-password").value = "";
     $("user-display").value = (u && u.displayName) || "";
     $("user-level").value = (u && u.accessLevel) || "wat";
+    if ($("user-app-scope")) $("user-app-scope").value = (u && u.appScope) || "all";
     $("user-tambon").value = (u && u.sanghaTambon) || "";
     $("user-err").textContent = "";
     toggleUserScopeFields();
@@ -6146,8 +7297,9 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
             ? '<button type="button" class="ghost tiny" data-edit="' + u.id + '">แก้</button> ' +
               '<button type="button" class="danger tiny" data-del="' + u.id + '">ลบ</button>'
             : "";
+          const scope = u.appScope === "duties" ? " · เฉพาะปฏิบัติศาสนกิจ" : "";
           return "<tr><td>" + esc(u.username) + "</td><td>" + esc(u.displayName || "") + "</td><td>" +
-            esc((u.accessLabel || u.accessLevel) + wait) + "</td><td>" + esc(zone) +
+            esc((u.accessLabel || u.accessLevel) + wait + scope) + "</td><td>" + esc(zone) +
             "</td><td>" + acts + "</td></tr>";
         }).join("") + "</tbody></table>"
       : '<p class="empty">ยังไม่มีผู้ใช้</p>';
@@ -6198,7 +7350,8 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
       watName: $("user-wat").value,
       sanghaTambon: $("user-tambon").value,
       district: $("user-district").value,
-      province: $("user-province").value
+      province: $("user-province").value,
+      appScope: ($("user-app-scope") && $("user-app-scope").value) || "all"
     };
     try {
       if (editingUser) {
@@ -6269,6 +7422,10 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     applyAccountPlace = true;
     hideLogin();
     applyAccessLocks();
+    if (isDutiesOnlyUser(me)) {
+      showDuties();
+      return;
+    }
     fillYearOptions();
     api("/samanasak").then(function (d) {
       samanassakGroups = d.groups || [];
@@ -6764,6 +7921,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   $("btn-aff-in").onclick = function () { affiliations = collectAff(); affiliations.push(emptyAff("รับเข้าสังกัด")); drawAff(); };
   $("btn-aff-out").onclick = function () { affiliations = collectAff(); affiliations.push(emptyAff("ย้ายสังกัด")); drawAff(); };
   $("status").onchange = function () { toggleMovedToWrap(); };
+  if ($("ill")) $("ill").onchange = function () { toggleIllDetail(); };
   $("btn-rains-edit").onclick = function () { setRainsMode(true); };
   $("btn-rains-done").onclick = function () { setRainsMode(false); };
   $("btn-rains").onclick = function () { rains = collectRains(); rains.unshift(emptyRain()); drawRains(); };
@@ -6969,6 +8127,15 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
         } else {
           bio.movedToWat = ($("status").value === "ย้ายวัด" && $("movedToWat")) ? $("movedToWat").value.trim() : "";
         }
+        if ($("status").value === "จำพรรษา" && $("ill") && $("ill").checked) {
+          bio.ill = true;
+          bio.illBedridden = !!($("illBedridden") && $("illBedridden").checked);
+          bio.illPlace = ($("illPlace") && $("illPlace").value) || "วัด";
+        } else {
+          bio.ill = false;
+          bio.illBedridden = false;
+          bio.illPlace = "";
+        }
         bio.eduExtra = collectEduExtra();
         bio.royalHistory = collectRoyalHistory();
         bio.watPosHistory = collectWatPosHistory();
@@ -7022,11 +8189,20 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   };
   fillYearOptions();
   toggleUserScopeFields();
-  api("/me").then(function (d) {
-    return onLoggedIn(d.user);
-  }).catch(function () {
-    showLogin();
-  });
+  function bootPhra() {
+    const start = (embedOn && embedTok)
+      ? api("/embed/accept", { method: "POST", body: JSON.stringify({ token: embedTok }) }).then(function (d) {
+          try { history.replaceState(null, "", location.pathname + "?embed=1"); } catch (e) {}
+          if (d && d.user) return onLoggedIn(d.user);
+          return api("/me").then(function (x) { return onLoggedIn(x.user); });
+        })
+      : api("/me").then(function (d) { return onLoggedIn(d.user); });
+    start.catch(function (e) {
+      showLogin();
+      if (embedOn && embedTok && $("login-err") && e && e.message) $("login-err").textContent = e.message;
+    });
+  }
+  bootPhra();
 })();
 </script>
 </body>

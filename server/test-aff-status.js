@@ -1,4 +1,4 @@
-const { destWat, lastAffiliation, affHomeWat, sameWatName, homeRainPlace, statusFromLastAffiliation, movedStatusLabel } = require("./lib/affStatus");
+const { destWat, lastAffiliation, affHomeWat, sameWatName, homeRainPlace, statusFromLastAffiliation, movedStatusLabel, illStatusLabel, parseIllPlace, statusFilterClause } = require("./lib/affStatus");
 
 function eq(got, want, label) {
   if (got !== want) {
@@ -19,6 +19,7 @@ eq(lastAffiliation(aff).kind, "ย้ายสังกัด", "last is move");
 eq(statusFromLastAffiliation(aff, "จำพรรษา").status, "ย้ายวัด", "last move → ย้ายวัด");
 eq(statusFromLastAffiliation(aff, "จำพรรษา").movedToWat, "วัดป่า", "dest temple");
 eq(statusFromLastAffiliation(aff, "มรณภาพ").status, "มรณภาพ", "death not overwritten");
+eq(statusFromLastAffiliation(aff, "อาพาธ").status, "ย้ายวัด", "ill stays extra, move still ย้ายวัด");
 eq(statusFromLastAffiliation(aff, "จำพรรษา", "", "วัดอินทาราม").status, "ย้ายวัด", "left current home");
 eq(statusFromLastAffiliation(aff, "ย้ายวัด", "วัดป่า", "วัดป่า").status, "จำพรรษา", "arrived at current home");
 eq(statusFromLastAffiliation(aff, "ย้ายวัด", "วัดป่า", "วัดป่า").movedToWat, "", "arrived clears movedTo");
@@ -29,6 +30,11 @@ const arrivedHome = [
 ];
 eq(statusFromLastAffiliation(arrivedHome, "ย้ายวัด", "วัดอินทาราม", "วัดอินทาราม").status, "จำพรรษา", "move in to current wat is resident");
 eq(movedStatusLabel("ย้ายวัด", "วัดป่า"), "ย้ายวัด · วัดป่า", "label");
+eq(illStatusLabel(true, true, "โรงพยาบาล"), "อาพาธ · ติดเตียง · โรงพยาบาล", "ill label");
+eq(illStatusLabel(true, false, "บ้าน"), "อาพาธ · บ้าน", "ill at home");
+eq(parseIllPlace("โรงพบาบาล"), "โรงพยาบาล", "typo hospital");
+eq(movedStatusLabel("จำพรรษา", "", true, true, "วัด"), "จำพรรษา · อาพาธ · ติดเตียง · วัด", "resident plus ill");
+eq(statusFilterClause("st", "$8").indexOf("อาพาธ") >= 0, true, "can filter ill extra");
 
 const back = [
   { kind: "สังกัดเมื่อบวช", wat_name: "วัดอินทาราม" },
