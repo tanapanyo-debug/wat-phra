@@ -170,7 +170,8 @@ eq(html.indexOf("รอผู้ดูแลอนุมัติจึงเข
 eq(html.indexOf("สมัครแล้วเข้าใช้") >= 0, false, "no instant signup login");
 eq(html.indexOf('id="btn-goto-signup" hidden') >= 0, true, "signup button hidden until open");
 eq(html.indexOf("btn-register-toggle") >= 0, true, "admin can open register");
-eq((html.match(/กลับเมนูหลัก/g) || []).length >= 2, true, "กลับเมนูหลัก on login and nav");
+eq(html.indexOf("กลับหน้ารวม") >= 0, true, "login goes back to hub");
+eq((html.match(/กลับเมนูหลัก/g) || []).length >= 1, true, "nav กลับเมนูหลัก");
 eq(html.indexOf('id="login-user" type="text"') >= 0, true, "login still accepts admin");
 eq(html.indexOf("size: legal landscape") >= 0, true, "rains report prints legal");
 eq(html.indexOf('col class="c-age"') >= 0, true, "age column is narrow");
@@ -189,7 +190,7 @@ eq(html.indexOf('col class="c-bprov"') >= 0, true, "birth province has its own c
 eq(html.indexOf("เกิดที่<br>จังหวัด") >= 0, true, "birth province header wraps on purpose");
 eq(html.indexOf("#rains-report-body") >= 0 && html.indexOf("width: 345mm") >= 0, true, "report preview matches legal width");
 eq(html.indexOf("พิมพ์และไฟล์") >= 0, true, "print and files sit in overflow");
-eq(html.indexOf('href="https://wat-accounting.onrender.com/hub"') >= 0, true, "กลับเมนูหลัก goes to hub");
+eq(html.indexOf('href="https://wat-accounting.onrender.com/hub"') >= 0, true, "กลับหน้ารวม goes to hub");
 eq(html.indexOf("body.embed #btn-logout") >= 0, true, "embed hides logout in accounting");
 eq(html.indexOf("embed-page") >= 0, true, "phone embed keeps back-to-hub");
 eq(html.indexOf("id=\"nav-duties\"") >= 0, true, "duty tab");
