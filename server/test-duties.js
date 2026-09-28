@@ -135,5 +135,8 @@ eq(html.indexOf("จำนวนทุน") >= 0 && html.indexOf("ทุนล�
 eq(html.indexOf("ไม่เก็บในประวัติพระ") >= 0 || html.indexOf("เลขบัตรประชาชน") >= 0, true, "grants stay off monk bio and link by id");
 eq(html.indexOf('id="fund-recipient"') < 0, true, "no named recipient register");
 eq(html.indexOf('value="fund"') < 0, true, "grants not inside duty-kind");
+eq(html.indexOf("%ขาดเช้า") < 0 && html.indexOf("%ขาดเย็น") < 0, true, "duty report drops percent");
+eq(html.indexOf("ทำวัตรเช้า") >= 0 && html.indexOf("ทำวัตรเย็น") >= 0, true, "duty report counts morning and evening attendance");
+eq(html.indexOf("morning.present") >= 0 && html.indexOf("evening.present") >= 0, true, "attendance days use present");
 
 console.log("ok duties");

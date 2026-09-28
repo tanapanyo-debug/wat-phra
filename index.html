@@ -898,7 +898,7 @@ table.rains-sheet td.chaya {
 table.duty-sheet col.c-no { width: 6%; }
 table.duty-sheet col.c-name { width: 28%; }
 table.duty-sheet col.c-miss { width: 10%; }
-table.duty-sheet col.c-pct { width: 11%; }
+table.duty-sheet col.c-do { width: 11%; }
 table.duty-sheet col.c-note { width: 24%; }
 @media (min-width: 560px) {
   .duty-times { grid-template-columns: 1fr 1fr; }
@@ -1362,7 +1362,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
         <button type="button" class="btn" id="btn-duty-report">ดูรายงานเดือน</button>
         <button type="button" class="ghost" id="btn-duty-report-print">พิมพ์</button>
       </div>
-      <p class="hint">เลือกเดือน แล้วกดดูรายงาน หรือพิมพ์เลย · ขาดเช้า–เย็น คิดเป็น %</p>
+      <p class="hint">เลือกเดือน แล้วกดดูรายงาน หรือพิมพ์เลย · แสดงวันทำวัตรและวันขาด ทั้งเช้าและเย็น</p>
     </div>
   </div>
 </main>
@@ -2862,7 +2862,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
       $("duty-lead").textContent = dutySub === "event"
         ? "บันทึกตามงานคณะสงฆ์ เช่น ไปบรรยาย อบรม ก่อสร้าง — ใช้ทำประวัติขอสมณศักดิ์ได้"
         : dutySub === "report"
-          ? "นับขาดทำวัตรเช้า–เย็นของเดือน แล้วคิดเป็น %"
+          ? "นับวันทำวัตรและวันขาด ทั้งเช้าและเย็น"
           : "บันทึกทำวัตรเช้า–เย็นของพระในวัด";
     }
     if ($("duty-event-panel")) $("duty-event-panel").hidden = dutySub !== "event";
@@ -3290,8 +3290,8 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   function dutyWhoPrint(name) {
     return String(name || "").replace(/\s+\([^)]+\)\s*$/, "");
   }
-  function dutyPctText(v) {
-    return v == null || v === "" ? "—" : Number(v).toFixed(1);
+  function dutyCountTd(n) {
+    return "<td class=\"num\">" + Number(n || 0) + "</td>";
   }
   function dutyMissTd(n) {
     return "<td class=\"num" + (Number(n) > 0 ? " miss" : "") + "\">" + Number(n || 0) + "</td>";
@@ -3309,30 +3309,30 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
       : "ทั้งเดือน " + data.daysInMonth + " วัน";
     const body = rows.map(function (r, i) {
       return "<tr><td class=\"n\">" + (i + 1) + "</td><td>" + esc(dutyWhoPrint(r.displayName)) + "</td>" +
+        dutyCountTd(r.morning && r.morning.present) +
         dutyMissTd(r.morning && r.morning.miss) +
-        "<td class=\"num\">" + dutyPctText(r.morning && r.morning.pctMiss) + "</td>" +
+        dutyCountTd(r.evening && r.evening.present) +
         dutyMissTd(r.evening && r.evening.miss) +
-        "<td class=\"num\">" + dutyPctText(r.evening && r.evening.pctMiss) + "</td>" +
         "<td>" + esc(r.note || "") + "</td></tr>";
     }).join("");
     const totRow = rows.length
       ? "<tr><td></td><td>รวม</td>" +
+        dutyCountTd(tot.morning && tot.morning.present) +
         dutyMissTd(tot.morning && tot.morning.miss) +
-        "<td class=\"num\">" + dutyPctText(tot.morning && tot.morning.pctMiss) + "</td>" +
+        dutyCountTd(tot.evening && tot.evening.present) +
         dutyMissTd(tot.evening && tot.evening.miss) +
-        "<td class=\"num\">" + dutyPctText(tot.evening && tot.evening.pctMiss) + "</td>" +
         "<td></td></tr>"
       : "";
     const empty = rows.length ? "" : '<tr><td colspan="7" class="num">ยังไม่มีรายชื่อจำพรรษาของวัดนี้</td></tr>';
     return '<div class="rains-head"><p class="t1">รายงานการทำวัตร</p>' +
       '<p class="t2">' + esc(data.watName || "") + "</p>" +
       '<p class="t3">ประจำเดือน' + esc(data.monthName || "") + " พ.ศ. " + esc(String(data.yearBe || "")) + "</p></div>" +
-      '<table class="duty-sheet"><col class="c-no"><col class="c-name"><col class="c-miss"><col class="c-pct"><col class="c-miss"><col class="c-pct"><col class="c-note">' +
-      "<thead><tr><th>ที่</th><th>ชื่อ</th><th>ขาดเช้า<br>วัน</th><th>%ขาดเช้า</th><th>ขาดเย็น<br>วัน</th><th>%ขาดเย็น</th><th>หมายเหตุ</th></tr></thead>" +
+      '<table class="duty-sheet"><col class="c-no"><col class="c-name"><col class="c-do"><col class="c-miss"><col class="c-do"><col class="c-miss"><col class="c-note">' +
+      "<thead><tr><th>ที่</th><th>ชื่อ</th><th>ทำวัตรเช้า<br>วัน</th><th>ขาดเช้า<br>วัน</th><th>ทำวัตรเย็น<br>วัน</th><th>ขาดเย็น<br>วัน</th><th>หมายเหตุ</th></tr></thead>" +
       "<tbody>" + (body || empty) + "</tbody>" +
       (totRow ? "<tfoot>" + totRow + "</tfoot>" : "") + "</table>" +
       '<p class="rains-foot">' + countedNote +
-      " · ขาด = ไม่มาหรือยังไม่ลง · ลาและยกเว้นไม่นับเป็นขาด · % = ขาด ÷ วันที่ต้องทำวัตร</p>";
+      " · ทำวัตร = มาตรงเวลาหรือสาย · ขาด = ไม่มาหรือยังไม่ลง · ลาและยกเว้นไม่นับ</p>";
   }
   async function openDutyMonthReport() {
     if ($("duty-err")) $("duty-err").textContent = "";
