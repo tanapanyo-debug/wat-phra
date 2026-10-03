@@ -52,7 +52,8 @@ eq(matchRankFilter({ paliRank: 6, rankKind: "พระราชาคณะ" }, 
 eq(standingOf({ paliLevel: "ป.ธ. ๓" }, [], "").paliRank, 3, "paliLevel thai digit 3");
 eq(standingOf({ paliLevel: "ป.ธ. ๔" }, [], "").paliRank, 4, "paliLevel thai digit 4");
 eq(standingOf({ paliLevel: "ป.ธ. ๓" }, [], "").isParian, true, "paliLevel 3 is parian");
-eq(matchRankFilter({ paliRank: 3, isParian: true }, "พระเปรียญธรรม"), true, "filter parian from paliLevel");
+eq(matchRankFilter({ watPosition: "อุปัชฌาย์" }, "พระอุปัชฌาย์"), true, "upajjhaya office");
+eq(matchRankFilter({ watPosition: "เจ้าอาวาส" }, "พระอุปัชฌาย์"), false, "abbot is not upajjhaya");
 
 const { classifyRanks } = require("./lib/ranks");
 const fromCourse = classifyRanks({ rank_kind: "", bio: {} }, [{ kind: "ธรรมทูต", yearText: "2559" }]);

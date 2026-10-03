@@ -128,10 +128,16 @@ function matchRankFilter(cls, wanted) {
     return cls.isBandit || (cls.ranks || []).indexOf("บัณฑิตเผยแผ่") >= 0
       || (cls.courses || []).some((c) => c.kind === "บัณฑิตเผยแผ่");
   }
+  if (w === "พระอุปัชฌาย์" || w === "อุปัชฌาย์") return isUpajjhaya(cls);
   return cls.rankKind === w;
 }
 
+function isUpajjhaya(r) {
+  const pos = String((r && (r.watPosition || r.wat_position)) || "").trim();
+  return pos === "อุปัชฌาย์" || pos === "พระอุปัชฌาย์";
+}
+
 module.exports = {
-  inferRank, classifyRanks, matchRankFilter, parseSpecialKinds,
+  inferRank, classifyRanks, matchRankFilter, parseSpecialKinds, isUpajjhaya,
   SANGHA_RANK_KINDS, PLAIN_NAME_KIND, isSanghaRankKind, normalizeRankKind, applyCallingName
 };

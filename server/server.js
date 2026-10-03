@@ -1,6 +1,6 @@
 require("dotenv").config();
 const path = require("path");
-const { classifyRanks, matchRankFilter, parseSpecialKinds, isSanghaRankKind, normalizeRankKind, applyCallingName } = require("./lib/ranks");
+const { classifyRanks, matchRankFilter, parseSpecialKinds, isSanghaRankKind, normalizeRankKind, applyCallingName, isUpajjhaya } = require("./lib/ranks");
 const { standingOf } = require("./lib/edu");
 const { displayName, displayNameAt } = require("./lib/names");
 const { SAMANASAK, SAMANASAK_CLASS, SAMANASAK_GROUPS, THANANAMA, isThananukromAction, isThananukromEntry } = require("./lib/samanasak");
@@ -125,7 +125,9 @@ const pool = new Pool({
 
 const STATUSES = ["จำพรรษา", "ย้ายวัด", "มรณภาพ", "ลาสิกขา"];
 const AFF_KINDS = ["สังกัดเมื่อบวช", "รับเข้าสังกัด", "ย้ายสังกัด"];
-const PERSON_TYPES = ["ภิกษุ", "สามเณร"];
+const PERSON_TYPES = ["ภิกษุ", "สามเณร", "แม่ชี", "ศิษย์วัด"];
+const LAY_TYPES = ["แม่ชี", "ศิษย์วัด"];
+const LAY_SQL = `COALESCE(m.person_type, 'ภิกษุ') NOT IN ('แม่ชี', 'ศิษย์วัด')`;
 const RAIN_KIND_AWAY = "ไปจำพรรษาที่อื่น";
 const RAIN_KIND_STUDY = "มาจำพรรษาเพื่อเรียน";
 function isAwayVassa(kind) {
@@ -143,6 +145,7 @@ function normalizeRainKind(k) {
 const BIO_KEYS = [
   ["nittayapatSeq", 40], ["photoName", 200],
   ["nickname", 80], ["englishName", 160], ["birthText", 80], ["fatherName", 160], ["motherName", 160],
+  ["discipleStay", 40],
   ["formerHouse", 120], ["formerTambon", 80], ["formerDistrict", 80], ["formerProvince", 80], ["formerPostcode", 20],
   ["formerJob", 80], ["ethnicity", 40], ["nationality", 40], ["stature", 40], ["skinTone", 40], ["marks", 160],
   ["noviceOn", 80], ["noviceWat", 160],
@@ -717,7 +720,10 @@ function readBody(b) {
     .sort((x, y) => String(x.event_date || "").localeCompare(String(y.event_date || "")))
     .pop();
   const bio = readBio(b);
-  const chayaPali = str(b.chayaPali, 80) || str(b.chaya, 80);
+  const stay = str(bio.discipleStay, 40);
+  bio.discipleStay = personType === "ศิษย์วัด" && (stay === "อยู่เพื่อศึกษา" || stay === "ทำงานในวัด") ? stay : "";
+  let chayaPali = str(b.chayaPali, 80) || str(b.chaya, 80);
+  if (LAY_TYPES.includes(personType) && !chayaPali) chayaPali = str(b.formerName, 80);
   const rankKind = normalizeRankKind(b.rankKind);
   const sanghaName = str(b.sanghaName, 160) || (isSanghaRankKind(rankKind) ? str(bio.royalName, 160) : "");
   applyCallingName(bio, sanghaName, rankKind);
@@ -1892,6 +1898,7 @@ async function reportData(req) {
            AND ($7 = 0 OR ${sanghaExpr} = '')
            AND ${statusFilterClause(statusSql, "$8")}
            AND ($9 = '' OR COALESCE(NULLIF(pw.province,''), ${yearStayProvinceSql("$9")}) = $9)
+           AND ${LAY_SQL}
          ORDER BY ${sanghaExpr}, CASE WHEN COALESCE(m.person_type, 'ภิกษุ') = 'สามเณร' THEN 1 ELSE 0 END, 8, m.chaya, m.id`;
     const allSql = `SELECT m.id, m.person_type, m.chaya, m.title, m.former_name, m.former_surname, m.status,
             m.wat_name,
@@ -1913,6 +1920,7 @@ async function reportData(req) {
            AND ($5 = '' OR m.wat_name = $5)
            AND ${statusFilterClause(statusSql, "$6")}
            AND ($7 = '' OR COALESCE(NULLIF(pw.province,''), m.province) = $7)
+           AND ${LAY_SQL}
          ORDER BY ${sanghaExprM}, CASE WHEN COALESCE(m.person_type, 'ภิกษุ') = 'สามเณร' THEN 1 ELSE 0 END, m.wat_name, m.chaya, m.id`;
     if (adminNeedsPlacePick(req.user, { q, watName, sanghaTambon, district, province, unmatched })) {
       return {
@@ -1976,6 +1984,7 @@ async function reportData(req) {
       if (x.ill) statusCounts["อาพาธ"] = (statusCounts["อาพาธ"] || 0) + 1;
       (x.ranks || []).forEach((t) => { rankCounts[t] = (rankCounts[t] || 0) + 1; });
       if (x.isParian) rankCounts["พระเปรียญธรรม"] = (rankCounts["พระเปรียญธรรม"] || 0) + 1;
+      if (isUpajjhaya(x)) rankCounts["พระอุปัชฌาย์"] = (rankCounts["พระอุปัชฌาย์"] || 0) + 1;
     });
     const rankWanted = str(req.query.rank, 40);
     if (rankWanted) {
@@ -2173,13 +2182,19 @@ app.get("/api/monks", async (req, res) => {
   try {
     const q = searchQ(req.query.q);
     const yearBe = intOrNull(req.query.yearBe, 2400, 2700);
+    const others = String(req.query.others || "") === "1";
+    const typeSql = others
+      ? `m.person_type IN ('แม่ชี', 'ศิษย์วัด')`
+      : LAY_SQL;
     const yearSql = `SELECT m.* FROM monks m
          JOIN monk_rains y ON y.monk_id = m.id AND y.year_be = $2
          WHERE ($1 = '' OR lower(m.chaya||' '||m.chaya_pali||' '||m.sangha_name||' '||COALESCE(m.bio->>'royalName','')||' '||COALESCE(m.bio::text,'')||' '||m.former_name||' '||m.former_surname||' '||m.wat_name||' '||m.title||' '||m.citizen_id) LIKE '%'||$1||'%')
+           AND ${typeSql}
          ORDER BY m.chaya, m.id`;
     const allSql = `SELECT m.* FROM monks m
          WHERE ($1 = '' OR lower(m.chaya||' '||m.chaya_pali||' '||m.sangha_name||' '||COALESCE(m.bio->>'royalName','')||' '||COALESCE(m.bio::text,'')||' '||m.former_name||' '||m.former_surname||' '||m.wat_name||' '||m.title||' '||m.citizen_id) LIKE '%'||$1||'%')
-         ORDER BY m.chaya, m.id`;
+           AND ${typeSql}
+         ORDER BY m.former_name, m.id`;
     const yearParams = [q, yearBe];
     const allParams = [q];
     if (adminNeedsPlacePick(req.user, Object.assign({ q: searchQ(req.query.q) }, reportPlaceOf(req.user, req.query)))) {
@@ -2223,7 +2238,9 @@ app.post("/api/monks", async (req, res) => {
   try {
     const b = applyWatUserHome(req.user, readBody(req.body || {}));
     idKind = b.id_kind || "thai";
-    if (!b.chaya_pali) return res.status(400).json({ error: "กรุณาใส่ฉายา" });
+    if (LAY_TYPES.includes(b.person_type)) {
+      if (!b.former_name) return res.status(400).json({ error: "กรอกชื่อ" });
+    } else if (!b.chaya_pali) return res.status(400).json({ error: "กรุณาใส่ฉายา" });
     if (b.citizen_id === null) return res.status(400).json({ error: idBadError(idKind) });
     await assertNewMonkInScope(pool, req.user, b);
     await client.query("BEGIN");
@@ -2266,7 +2283,9 @@ app.put("/api/monks/:id", async (req, res) => {
     if (!id) return res.status(400).json({ error: "ไม่พบรายการ" });
     const b = applyWatUserHome(req.user, readBody(req.body || {}));
     idKind = b.id_kind || "thai";
-    if (!b.chaya_pali) return res.status(400).json({ error: "กรุณาใส่ฉายา" });
+    if (LAY_TYPES.includes(b.person_type)) {
+      if (!b.former_name) return res.status(400).json({ error: "กรอกชื่อ" });
+    } else if (!b.chaya_pali) return res.status(400).json({ error: "กรุณาใส่ฉายา" });
     if (b.citizen_id === null) return res.status(400).json({ error: idBadError(idKind) });
     const homeParams = [id];
     const home = await pool.query(

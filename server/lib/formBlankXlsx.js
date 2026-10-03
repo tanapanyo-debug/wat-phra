@@ -264,7 +264,7 @@ function formSections() {
     {
       title: "ส่วนที่ 10 ตำแหน่งงานพิเศษ / Special appointments",
       fields: [
-        ["ประเภทงานพิเศษ", "Type — Dhammaduta, preacher, vipassana, pariyatti, propagation graduate, or other"],
+        ["ประเภทงานพิเศษ", "Type — Dhammaduta, preacher, vipassana, pariyatti, propagation graduate, patimokkha reciter, or other"],
         ["วันที่ได้รับมอบหมาย", "Date assigned"],
         ["ชื่องาน", "Work title"],
         ["รายละเอียด", "Details"]

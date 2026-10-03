@@ -224,6 +224,7 @@ function parseSpecial(text, bio) {
   }
   if (/ปริยัตินิเทศน์/.test(s)) courses.push({ kind: "ปริยัตินิเทศน์", yearText: dash(bio.specialOn), place: dash(bio.specialWork) });
   if (/บัณฑิตเผยแผ่/.test(s)) courses.push({ kind: "บัณฑิตเผยแผ่", yearText: dash(bio.specialOn), place: dash(bio.specialWork) });
+  if (/ปาติโมกข์/.test(s)) courses.push({ kind: "ทรงปาติโมกข์", yearText: dash(bio.specialOn), place: dash(bio.specialWork) });
   return courses.filter(function (a) { return a.kind; });
 }
 

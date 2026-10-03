@@ -53,6 +53,7 @@ function carrySourceSql(watPlaceSql) {
        AND (COALESCE(NULLIF(y.district,''), m.district) = '' OR lower(pw.district) = lower(COALESCE(NULLIF(y.district,''), m.district)))
      WHERE COALESCE(NULLIF(m.status,''), 'จำพรรษา') IN ('จำพรรษา', 'อาพาธ')
        AND COALESCE(NULLIF(y.rain_kind,''), '') <> '${RAIN_KIND_PENDING}'
+       AND COALESCE(m.person_type, 'ภิกษุ') NOT IN ('แม่ชี', 'ศิษย์วัด')
        AND $2::int <> $1
        AND ($3::text = '' OR COALESCE(NULLIF(y.wat_name,''), m.wat_name) = $3 OR m.wat_name = $3)
        AND ($4::text = '' OR ${sanghaExpr} = $4)

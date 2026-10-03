@@ -432,14 +432,16 @@ body.duties-only #nav-list,
 body.duties-only #nav-places,
 body.duties-only #nav-users,
 body.duties-only #nav-fund,
+body.duties-only #nav-others,
 body.duties-only #page-list,
 body.duties-only #dlg,
 body.duties-only #page-places,
 body.duties-only #page-users,
 body.duties-only #page-fund,
+body.duties-only #page-others,
 body.duties-only #level-request-box { display: none !important; }
   @media print {
-  .top, .nav, .bar, .list-tools, #page-places, #page-users, #page-duties, #page-fund, #page-login { display: none !important; }
+  .top, .nav, .bar, .list-tools, #page-places, #page-users, #page-duties, #page-fund, #page-others, #page-login { display: none !important; }
   body:not(.print-data) #dlg { display: none !important; }
   body.print-data #page-list { display: none !important; }
   body.print-rains #page-list,
@@ -448,6 +450,7 @@ body.duties-only #level-request-box { display: none !important; }
   body.print-rains #page-users,
   body.print-rains #page-duties,
   body.print-rains #page-fund,
+  body.print-rains #page-others,
   body.print-rains #dlg,
   body.print-rains #duty-month-report,
   body.print-rains .rains-toolbar { display: none !important; }
@@ -457,6 +460,7 @@ body.duties-only #level-request-box { display: none !important; }
   body.print-duty #page-users,
   body.print-duty #page-duties,
   body.print-duty #page-fund,
+  body.print-duty #page-others,
   body.print-duty #dlg,
   body.print-duty #rains-report,
   body.print-duty .rains-toolbar { display: none !important; }
@@ -537,6 +541,8 @@ label .en::before, summary .en::before, .sec-title .en::before, h3 .en::before, 
   content: " / ";
   color: #c4cdc8;
 }
+#other-list table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+#other-list th, #other-list td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
 input, select, textarea {
   width: 100%;
   padding: 10px 12px;
@@ -616,6 +622,7 @@ body.need-login #page-places,
 body.need-login #page-users,
 body.need-login #page-duties,
 body.need-login #page-fund,
+body.need-login #page-others,
 body.need-login #rains-report,
 body.need-login #duty-month-report,
 body.need-login #dlg { display: none !important; }
@@ -638,6 +645,7 @@ body.rains-open #page-places,
 body.rains-open #page-users,
 body.rains-open #page-duties,
 body.rains-open #page-fund,
+body.rains-open #page-others,
 body.rains-open #duty-month-report,
 body.rains-open #dlg { display: none !important; }
 #duty-month-report {
@@ -656,6 +664,7 @@ body.duty-report-open #page-places,
 body.duty-report-open #page-users,
 body.duty-report-open #page-duties,
 body.duty-report-open #page-fund,
+body.duty-report-open #page-others,
 body.duty-report-open #rains-report,
 body.duty-report-open #dlg { display: none !important; }
 #duty-month-report-body {
@@ -1158,6 +1167,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   <small>ดึงใช้บ่อยเป็นรายงาน · ทะเบียนเต็มและหนังสือสุทธิเก็บไว้ตอนแก้รายชื่อ</small>
   <nav class="nav">
     <button type="button" class="on" id="nav-list">รายงานพระภิกษุ</button>
+    <button type="button" id="nav-others">ข้อมูลอื่นๆ</button>
     <button type="button" id="nav-duties">ข้อมูลการปฏิบัติศาสนกิจ</button>
     <button type="button" id="nav-fund">แจกทุนการศึกษา</button>
     <button type="button" id="nav-places">จัดวัด-ตำบลคณะสงฆ์</button>
@@ -1207,6 +1217,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
         <option value="วิปัสสนาจารย์">พระวิปัสสนาจารย์</option>
         <option value="ปริยัตินิเทศน์">พระปริยัตินิเทศน์</option>
         <option value="บัณฑิตเผยแผ่">พระบัณฑิตเผยแผ่</option>
+        <option value="พระอุปัชฌาย์">พระอุปัชฌาย์</option>
         <option value="พระเปรียญธรรม">พระเปรียญธรรม</option>
         <option value="ป.ธ.3">พระเปรียญธรรม ป.ธ.๓</option>
         <option value="ป.ธ.4">พระเปรียญธรรม ป.ธ.๔</option>
@@ -1253,6 +1264,81 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   </div>
   <p class="stats" id="stats"></p>
   <div id="list"></div>
+</main>
+<main class="wrap" id="page-others" hidden>
+  <div class="card">
+    <h2 style="margin:0 0 6px;font-size:1.15rem">ข้อมูลอื่นๆ</h2>
+    <p class="hint" style="margin:0 0 12px">แม่ชีและศิษย์วัด กรอกเหมือนคนทั่วไป · วุฒิทางโลกกรอกปีกับสถานศึกษา · ธรรมศึกษาบันทึกแบบนักธรรม · บาลีศึกษาบันทึกแบบบาลี</p>
+    <p class="msg" id="other-err"></p>
+    <div class="grid2">
+      <div>
+        <label>ประเภท</label>
+        <select id="other-type">
+          <option value="แม่ชี">แม่ชี</option>
+          <option value="ศิษย์วัด">ศิษย์วัด</option>
+        </select>
+      </div>
+      <div id="other-stay-wrap" hidden>
+        <label>ศิษย์วัด</label>
+        <select id="other-stay">
+          <option value="">เลือก</option>
+          <option value="อยู่เพื่อศึกษา">อยู่เพื่อศึกษา</option>
+          <option value="ทำงานในวัด">ทำงานในวัด</option>
+        </select>
+      </div>
+      <div>
+        <label>เลขบัตรประชาชน</label>
+        <input id="other-cid" maxlength="17" inputmode="numeric" placeholder="13 หลัก เว้นได้ถ้ายังไม่มี" autocomplete="off">
+      </div>
+      <div>
+        <label>ชื่อ</label>
+        <input id="other-name" maxlength="120">
+      </div>
+      <div>
+        <label>นามสกุล</label>
+        <input id="other-surname" maxlength="120">
+      </div>
+      <div>
+        <label>วัด</label>
+        <input id="other-wat" maxlength="160" list="wat-catalog" placeholder="เช่น วัดอินทาราม">
+      </div>
+      <div>
+        <label>หมายเหตุ</label>
+        <input id="other-note" maxlength="500">
+      </div>
+    </div>
+    <h3 style="margin:16px 0 8px;font-size:1rem">วุฒิทางโลก</h3>
+    <p class="hint">กดเพิ่มชั้นที่มี แล้วกรอกปีกับสถานศึกษา</p>
+    <div id="other-world-list"></div>
+    <div class="edu-add" id="other-world-add"></div>
+    <h3 style="margin:16px 0 8px;font-size:1rem">ธรรมศึกษา</h3>
+    <p class="hint">บันทึกทีละชั้น เหมือนนักธรรมของพระ · ปี วัดที่จบ สำนักเรียน จังหวัด</p>
+    <div id="other-dhamma-list"></div>
+    <div class="edu-add" id="other-dhamma-add"></div>
+    <h3 style="margin:16px 0 8px;font-size:1rem">บาลีศึกษา</h3>
+    <p class="hint">บันทึกทีละประโยค เหมือนบาลีของพระ · ปี สอบในนามวัด สำนักเรียน จังหวัด</p>
+    <div id="other-pali-list"></div>
+    <div class="edu-add" id="other-pali-add"></div>
+    <div class="bar">
+      <button type="button" class="btn" id="btn-other-save">บันทึก</button>
+      <button type="button" class="ghost" id="btn-other-clear">ล้างฟอร์ม</button>
+    </div>
+    <div class="list-tools">
+      <div class="tool-search">
+        <input id="other-q" placeholder="ค้นชื่อ นามสกุล หรือวัด" autocomplete="off">
+      </div>
+      <div class="tool-filters">
+        <select id="other-filter">
+          <option value="">ทุกประเภท</option>
+          <option value="แม่ชี">แม่ชี</option>
+          <option value="ศิษย์วัด">ศิษย์วัด</option>
+          <option value="อยู่เพื่อศึกษา">ศิษย์วัด · อยู่เพื่อศึกษา</option>
+          <option value="ทำงานในวัด">ศิษย์วัด · ทำงานในวัด</option>
+        </select>
+      </div>
+    </div>
+    <div id="other-list"></div>
+  </div>
 </main>
 <main class="wrap" id="page-duties" hidden>
   <div class="card">
@@ -1596,6 +1682,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
             <option value="มรณภาพ">มรณภาพ / Passed away</option>
             <option value="ลาสิกขา">ลาสิกขา / Disrobed</option>
           </select>
+          <p class="hint">หลังออกพรรษา ถ้าปรับเป็นลาสิกขาหรือย้ายวัด ระบบนับเป็นนอกพรรษาให้เอง</p>
           <div id="movedToWrap" hidden style="margin-top:8px">
             <label>วัดที่ย้ายไป <span class="en">Moved to</span></label>
             <input id="movedToWat" maxlength="160" list="wat-catalog" placeholder="ชื่อวัดปลายทาง">
@@ -1955,11 +2042,11 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
           </section>
           <datalist id="thananukrom-office"></datalist>
           <section class="reg-sec tone-teal">
-          <h3 class="sec-title tone-teal">ส่วนที่ 8 ตำแหน่งการปกครองภายในวัดและงานในวัด <span class="en">Monastery offices</span></h3>
+          <h3 class="sec-title tone-teal">ส่วนที่ 8 ตำแหน่งการปกครองภายในวัดและงานในวัด/อุปัชฌาย์ <span class="en">Preceptor / monastery offices</span></h3>
           <div id="watpos-view" class="view-stack tone-teal"></div>
           <button type="button" class="ghost tiny" id="btn-watpos-edit">แก้ไขประวัติตำแหน่งวัด</button>
           <div id="watpos-edit" hidden>
-            <p class="hint">ปกครองวัดเลือกเจ้าอาวาส รอง ผู้ช่วย · งานในวัดเลือกตำแหน่งแล้วกรอกตำบลหรือวัดต่อท้าย เช่น ประธานหน่วยอบรมประชาชนประจำตำบลหัวรอ · ของเก่าไม่หาย</p>
+            <p class="hint">ปกครองวัดเลือกเจ้าอาวาส รอง ผู้ช่วย อุปัชฌาย์ · งานในวัดเลือกตำแหน่งแล้วกรอกตำบลหรือวัดต่อท้าย เช่น ประธานหน่วยอบรมประชาชนประจำตำบลหัวรอ · ของเก่าไม่หาย</p>
             <div id="watpos-list"></div>
             <button type="button" class="ghost tiny" id="btn-watpos-add">+ ตำแหน่งวัด</button>
             <div style="margin-top:10px">
@@ -1986,11 +2073,11 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
           </div>
           </section>
           <section class="reg-sec tone-rose">
-          <h3 class="sec-title tone-rose">ส่วนที่ 10 ตำแหน่งงานพิเศษ <span class="en">Special appointments</span></h3>
+          <h3 class="sec-title tone-rose">ส่วนที่ 10 ตำแหน่งงานพิเศษ <span class="en">Special appointments/ภิกษุปาฎิโมกข์</span></h3>
           <div id="special-view" class="view-stack tone-rose"></div>
           <button type="button" class="ghost tiny" id="btn-special-edit">แก้ไขงานพิเศษ</button>
           <div id="special-edit" hidden>
-            <p class="hint">แสดงเฉพาะตำแหน่งที่มีข้อมูล · กดเพิ่มพระธรรมทูต นักเทศน์ วิปัสสนาจารย์ หรือประเภทอื่นๆ — ตัวอย่างในตัวเลือก หรือเลือกอื่นๆ แล้วระบุเอง</p>
+            <p class="hint">แสดงเฉพาะตำแหน่งที่มีข้อมูล · กดเพิ่มพระธรรมทูต นักเทศน์ วิปัสสนาจารย์ หรือประเภทอื่นๆ เช่น ทรงปาติโมกข์ — ตัวอย่างในตัวเลือก หรือเลือกอื่นๆ แล้วระบุเอง</p>
             <div class="grid2">
               <div><label>วันที่ได้รับมอบหมาย <span class="en">Date assigned</span></label><input data-bio="specialOn" maxlength="80"></div>
               <div><label>ชื่องาน <span class="en">Work title</span></label><input data-bio="specialWork" maxlength="160"></div>
@@ -2015,6 +2102,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
             <datalist id="special-other-examples">
               <option value="ปริยัตินิเทศน์">พระปริยัตินิเทศน์</option>
               <option value="บัณฑิตเผยแผ่">พระบัณฑิตเผยแผ่</option>
+              <option value="ทรงปาติโมกข์">ทรงปาติโมกข์</option>
             </datalist>
             <div id="course-list"></div>
             <div class="edu-add" id="special-add"></div>
@@ -2194,7 +2282,8 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   ];
   const SPECIAL_OTHER = [
     { key: "ปริยัตินิเทศน์", label: "พระปริยัตินิเทศน์" },
-    { key: "บัณฑิตเผยแผ่", label: "พระบัณฑิตเผยแผ่" }
+    { key: "บัณฑิตเผยแผ่", label: "พระบัณฑิตเผยแผ่" },
+    { key: "ทรงปาติโมกข์", label: "ทรงปาติโมกข์" }
   ];
   const SIX_TYPES = [
     "การปกครอง",
@@ -2616,6 +2705,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
       $("nav-users").hidden = true;
       if ($("nav-duties")) $("nav-duties").hidden = false;
       if ($("nav-fund")) $("nav-fund").hidden = true;
+      if ($("nav-others")) $("nav-others").hidden = true;
       const sub = document.querySelector(".top small");
       if (sub) sub.textContent = "ใช้ได้เฉพาะปฏิบัติศาสนกิจ";
     } else if ($("nav-fund")) {
@@ -2635,7 +2725,8 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     $("page-users").hidden = true;
     if ($("page-duties")) $("page-duties").hidden = true;
     if ($("page-fund")) $("page-fund").hidden = true;
-    ["nav-list", "nav-places", "nav-users", "nav-duties", "nav-fund"].forEach(function (id) {
+    if ($("page-others")) $("page-others").hidden = true;
+    ["nav-list", "nav-places", "nav-users", "nav-duties", "nav-fund", "nav-others"].forEach(function (id) {
       if ($(id)) $(id).classList.remove("on");
     });
   }
@@ -2644,6 +2735,299 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     hideAppPages();
     $("page-list").hidden = false;
     $("nav-list").classList.add("on");
+  }
+  const OTHER_DHAMMA = [
+    { key: "dhammaTri", label: "ธรรมศึกษา ชั้น ตรี", short: "ตรี" },
+    { key: "dhammaTo", label: "ธรรมศึกษา ชั้น โท", short: "โท" },
+    { key: "dhammaEk", label: "ธรรมศึกษา ชั้น เอก", short: "เอก" }
+  ];
+  const OTHER_PALI = [
+    { key: "pali12", label: "บาลีศึกษา ประโยค ๑-๒", short: "ป.ธ. ๑-๒" },
+    { key: "pali3", label: "บาลีศึกษา ป.ธ. ๓", short: "ป.ธ. ๓" },
+    { key: "pali4", label: "บาลีศึกษา ป.ธ. ๔", short: "ป.ธ. ๔" },
+    { key: "pali5", label: "บาลีศึกษา ป.ธ. ๕", short: "ป.ธ. ๕" },
+    { key: "pali6", label: "บาลีศึกษา ป.ธ. ๖", short: "ป.ธ. ๖" },
+    { key: "pali7", label: "บาลีศึกษา ป.ธ. ๗", short: "ป.ธ. ๗" },
+    { key: "pali8", label: "บาลีศึกษา ป.ธ. ๘", short: "ป.ธ. ๘" },
+    { key: "pali9", label: "บาลีศึกษา ป.ธ. ๙", short: "ป.ธ. ๙" }
+  ];
+  let otherRows = [];
+  let otherEditing = 0;
+  let otherBio = {};
+  let otherWorldShown = [];
+  let otherDhammaShown = [];
+  let otherPaliShown = [];
+  function otherField(name) {
+    return document.querySelector('#page-others [data-other="' + name + '"]');
+  }
+  function otherVal(name) {
+    const el = otherField(name);
+    return el ? String(el.value || "").trim() : "";
+  }
+  function snapOtherFields() {
+    const out = {};
+    document.querySelectorAll("#page-others [data-other]").forEach(function (el) {
+      out[el.getAttribute("data-other")] = el.value;
+    });
+    return out;
+  }
+  function fillOtherFields(map) {
+    Object.keys(map || {}).forEach(function (k) {
+      const el = otherField(k);
+      if (!el) return;
+      el.value = map[k] || "";
+      if (el.tagName === "SELECT" && el.value !== (map[k] || "") && map[k]) {
+        const opt = document.createElement("option");
+        opt.value = map[k];
+        opt.textContent = map[k];
+        el.appendChild(opt);
+        el.value = map[k];
+      }
+    });
+  }
+  function otherHas(bio, key, suffixes) {
+    return suffixes.some(function (suf) { return String((bio && bio[key + suf]) || "").trim(); });
+  }
+  function otherGradeHtml(key) {
+    const opts = WORLD_GRADE_OPTS[key];
+    if (!opts) return '<input data-other="' + key + 'Grade" maxlength="40">';
+    return '<select data-other="' + key + 'Grade"><option value=""></option>' +
+      opts.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + "</option>"; }).join("") +
+      "</select>";
+  }
+  function drawOtherBlock(listId, addId, levels, shown, kind) {
+    const box = $(listId);
+    const add = $(addId);
+    if (!box || !add) return;
+    box.innerHTML = levels.map(function (lv) {
+      if (shown.indexOf(lv.key) < 0) return "";
+      if (kind === "world") {
+        return '<div class="grid3" style="margin-bottom:8px">' +
+          "<div><label>พ.ศ.</label><input data-other=\"" + lv.key + "Year\" maxlength=\"40\" placeholder=\"เช่น 2566\"></div>" +
+          "<div><label>" + esc(lv.label) + "</label>" + otherGradeHtml(lv.key) + "</div>" +
+          "<div><label>สถานศึกษา</label><input data-other=\"" + lv.key + "School\" maxlength=\"160\"></div></div>";
+      }
+      if (kind === "dhamma") {
+        return '<div style="margin-bottom:10px"><b>' + esc(lv.label) + "</b>" +
+          '<div class="grid2"><div><label>ปี</label><input data-other="' + lv.key + 'Year" maxlength="40"></div>' +
+          '<div><label>วัด</label><input data-other="' + lv.key + 'School" maxlength="160" placeholder="พิมพ์ชื่อวัด"></div></div>' +
+          '<div class="grid2"><div><label>สำนักเรียน</label><input data-other="' + lv.key + 'Samnak" maxlength="160"></div>' +
+          '<div><label>จังหวัด</label><input data-other="' + lv.key + 'Province" maxlength="80"></div></div></div>';
+      }
+      return '<div style="margin-bottom:10px"><b>' + esc(lv.label) + "</b>" +
+        '<div class="grid2"><div><label>ปี</label><input data-other="' + lv.key + 'Year" maxlength="40"></div>' +
+        '<div><label>สอบในนามวัด</label><input data-other="' + lv.key + 'Wat" maxlength="160" placeholder="พิมพ์ชื่อวัด"></div></div>' +
+        '<div class="grid2"><div><label>สำนักเรียน</label><input data-other="' + lv.key + 'School" maxlength="160"></div>' +
+        '<div><label>จังหวัด</label><input data-other="' + lv.key + 'Province" maxlength="80"></div></div></div>';
+    }).join("");
+    add.innerHTML = levels.filter(function (lv) { return shown.indexOf(lv.key) < 0; }).map(function (lv) {
+      return '<button type="button" class="ghost tiny" data-other-add="' + lv.key + '">+ ' + esc(lv.label) + "</button>";
+    }).join("");
+    add.querySelectorAll("[data-other-add]").forEach(function (btn) {
+      btn.onclick = function () {
+        const snap = snapOtherFields();
+        const key = btn.getAttribute("data-other-add");
+        if (kind === "world") otherWorldShown.push(key);
+        else if (kind === "dhamma") otherDhammaShown.push(key);
+        else otherPaliShown.push(key);
+        drawOtherEdu();
+        fillOtherFields(snap);
+      };
+    });
+  }
+  function drawOtherEdu() {
+    drawOtherBlock("other-world-list", "other-world-add", WORLD_LEVELS, otherWorldShown, "world");
+    drawOtherBlock("other-dhamma-list", "other-dhamma-add", OTHER_DHAMMA, otherDhammaShown, "dhamma");
+    drawOtherBlock("other-pali-list", "other-pali-add", OTHER_PALI, otherPaliShown, "pali");
+  }
+  function otherSummary(bio, levels, suffixes) {
+    return levels.map(function (lv) {
+      if (!otherHas(bio, lv.key, suffixes)) return "";
+      const bits = suffixes.map(function (suf) { return String(bio[lv.key + suf] || "").trim(); }).filter(Boolean);
+      return lv.label + (bits.length ? " " + bits.join(" ") : "");
+    }).filter(Boolean).join(" · ");
+  }
+  function syncOtherStay() {
+    const on = $("other-type") && $("other-type").value === "ศิษย์วัด";
+    if ($("other-stay-wrap")) $("other-stay-wrap").hidden = !on;
+    if (!on && $("other-stay")) $("other-stay").value = "";
+  }
+  function clearOtherForm() {
+    otherEditing = 0;
+    otherBio = {};
+    otherWorldShown = [];
+    otherDhammaShown = [];
+    otherPaliShown = [];
+    $("other-type").value = "แม่ชี";
+    $("other-cid").value = "";
+    $("other-name").value = "";
+    $("other-surname").value = "";
+    $("other-wat").value = "";
+    $("other-note").value = "";
+    $("other-stay").value = "";
+    syncOtherStay();
+    $("other-err").textContent = "";
+    $("btn-other-save").textContent = "บันทึก";
+    drawOtherEdu();
+  }
+  function fillOtherForm(m) {
+    const bio = (m && m.bio) || {};
+    otherEditing = m && m.id ? m.id : 0;
+    otherBio = Object.assign({}, bio);
+    $("other-type").value = m && (m.personType === "ศิษย์วัด" || m.personType === "แม่ชี") ? m.personType : "แม่ชี";
+    $("other-cid").value = (m && m.citizenId) || "";
+    $("other-name").value = (m && m.formerName) || "";
+    $("other-surname").value = (m && m.formerSurname) || "";
+    $("other-wat").value = (m && m.watName) || "";
+    $("other-note").value = (m && m.note) || "";
+    $("other-stay").value = (bio.discipleStay === "อยู่เพื่อศึกษา" || bio.discipleStay === "ทำงานในวัด") ? bio.discipleStay : "";
+    syncOtherStay();
+    otherWorldShown = WORLD_LEVELS.filter(function (lv) {
+      return otherHas(bio, lv.key, ["Year", "Grade", "School"]);
+    }).map(function (lv) { return lv.key; });
+    otherDhammaShown = OTHER_DHAMMA.filter(function (lv) {
+      return otherHas(bio, lv.key, ["Year", "School", "Samnak", "Province"]);
+    }).map(function (lv) { return lv.key; });
+    otherPaliShown = OTHER_PALI.filter(function (lv) {
+      return otherHas(bio, lv.key, ["Year", "Wat", "School", "Province"]);
+    }).map(function (lv) { return lv.key; });
+    drawOtherEdu();
+    const map = {};
+    WORLD_LEVELS.forEach(function (lv) {
+      ["Year", "Grade", "School"].forEach(function (suf) { map[lv.key + suf] = bio[lv.key + suf] || ""; });
+    });
+    OTHER_DHAMMA.forEach(function (lv) {
+      ["Year", "School", "Samnak", "Province"].forEach(function (suf) { map[lv.key + suf] = bio[lv.key + suf] || ""; });
+    });
+    OTHER_PALI.forEach(function (lv) {
+      ["Year", "Wat", "School", "Province"].forEach(function (suf) { map[lv.key + suf] = bio[lv.key + suf] || ""; });
+    });
+    fillOtherFields(map);
+    $("btn-other-save").textContent = otherEditing ? "บันทึกการแก้ไข" : "บันทึก";
+    $("other-name").focus();
+  }
+  function drawOthers() {
+    const q = String($("other-q").value || "").trim().toLowerCase();
+    const kind = $("other-filter").value;
+    const rows = otherRows.filter(function (m) {
+      const stay = (m.bio && m.bio.discipleStay) || "";
+      if (kind === "อยู่เพื่อศึกษา" || kind === "ทำงานในวัด") {
+        if (m.personType !== "ศิษย์วัด" || stay !== kind) return false;
+      } else if (kind && m.personType !== kind) return false;
+      if (!q) return true;
+      return [m.formerName, m.formerSurname, m.watName, m.citizenId].join(" ").toLowerCase().indexOf(q) >= 0;
+    });
+    if (!rows.length) {
+      $("other-list").innerHTML = '<p class="hint">ยังไม่มีรายชื่อ</p>';
+      return;
+    }
+    $("other-list").innerHTML = '<table><thead><tr><th>ประเภท</th><th>ชื่อ</th><th>วัด</th><th>วุฒิทางโลก</th><th>ธรรมศึกษา</th><th>บาลีศึกษา</th><th></th></tr></thead><tbody>' +
+      rows.map(function (m) {
+        const bio = m.bio || {};
+        const world = otherSummary(bio, WORLD_LEVELS, ["Year", "Grade", "School"]);
+        const dhamma = otherSummary(bio, OTHER_DHAMMA, ["Year", "School", "Samnak", "Province"]);
+        const pali = otherSummary(bio, OTHER_PALI, ["Year", "Wat", "School", "Province"]);
+        const stay = (bio.discipleStay === "อยู่เพื่อศึกษา" || bio.discipleStay === "ทำงานในวัด") ? bio.discipleStay : "";
+        const typeText = (m.personType || "") + (stay ? " · " + stay : "");
+        return "<tr><td>" + esc(typeText) + "</td><td>" + esc([m.formerName, m.formerSurname].filter(Boolean).join(" ")) +
+          "</td><td>" + esc(m.watName || "") + "</td><td>" + esc(world) + "</td><td>" + esc(dhamma) + "</td><td>" + esc(pali) +
+          '</td><td><button type="button" class="ghost tiny" data-other-edit="' + m.id + '">แก้</button> ' +
+          '<button type="button" class="danger tiny" data-other-del="' + m.id + '">ลบ</button></td></tr>';
+      }).join("") + "</tbody></table>";
+    $("other-list").querySelectorAll("[data-other-edit]").forEach(function (btn) {
+      btn.onclick = function () {
+        const id = Number(btn.getAttribute("data-other-edit"));
+        const row = otherRows.filter(function (m) { return m.id === id; })[0];
+        if (row) fillOtherForm(row);
+      };
+    });
+    $("other-list").querySelectorAll("[data-other-del]").forEach(function (btn) {
+      btn.onclick = async function () {
+        const id = Number(btn.getAttribute("data-other-del"));
+        if (!confirm("ลบรายการนี้")) return;
+        $("other-err").textContent = "";
+        try {
+          await api("/monks/" + id, { method: "DELETE" });
+          if (otherEditing === id) clearOtherForm();
+          await loadOthers();
+        } catch (e) {
+          $("other-err").textContent = e.message || "ลบไม่สำเร็จ";
+        }
+      };
+    });
+  }
+  async function loadOthers() {
+    const data = await api("/monks?others=1");
+    otherRows = data.monks || [];
+    drawOthers();
+  }
+  function showOthers() {
+    if (isDutiesOnlyUser(me)) return showDuties();
+    hideAppPages();
+    $("page-others").hidden = false;
+    $("nav-others").classList.add("on");
+    if (!otherEditing) drawOtherEdu();
+    loadOthers().catch(function (e) {
+      $("other-err").textContent = e.message || "โหลดไม่สำเร็จ";
+    });
+  }
+  async function saveOther() {
+    $("other-err").textContent = "";
+    const name = String($("other-name").value || "").trim();
+    if (!name) {
+      $("other-err").textContent = "กรอกชื่อ";
+      $("other-name").focus();
+      return;
+    }
+    if ($("other-type").value === "ศิษย์วัด" && $("other-stay").value !== "อยู่เพื่อศึกษา" && $("other-stay").value !== "ทำงานในวัด") {
+      $("other-err").textContent = "เลือกศิษย์วัดว่าอยู่เพื่อศึกษา หรือทำงานในวัด";
+      $("other-stay").focus();
+      return;
+    }
+    const bio = Object.assign({}, otherBio);
+    function writeLevels(levels, suffixes) {
+      let last = null;
+      levels.forEach(function (lv) {
+        suffixes.forEach(function (suf) {
+          bio[lv.key + suf] = otherVal(lv.key + suf);
+        });
+        if (suffixes.some(function (suf) { return bio[lv.key + suf]; })) last = lv;
+      });
+      return last;
+    }
+    writeLevels(WORLD_LEVELS, ["Year", "Grade", "School"]);
+    const lastD = writeLevels(OTHER_DHAMMA, ["Year", "School", "Samnak", "Province"]);
+    const lastP = writeLevels(OTHER_PALI, ["Year", "Wat", "School", "Province"]);
+    bio.dhammaLevel = lastD ? lastD.short : "";
+    bio.dhammaYear = lastD ? (bio[lastD.key + "Year"] || "") : "";
+    bio.dhammaSchool = lastD ? (bio[lastD.key + "School"] || "") : "";
+    bio.paliLevel = lastP ? lastP.short : "";
+    bio.paliYear = lastP ? (bio[lastP.key + "Year"] || "") : "";
+    bio.paliSchool = lastP ? (bio[lastP.key + "School"] || "") : "";
+    bio.discipleStay = $("other-type").value === "ศิษย์วัด" ? $("other-stay").value : "";
+    const body = {
+      personType: $("other-type").value,
+      formerName: name,
+      formerSurname: String($("other-surname").value || "").trim(),
+      chayaPali: name,
+      watName: String($("other-wat").value || "").trim(),
+      citizenId: String($("other-cid").value || "").trim(),
+      idKind: "thai",
+      status: "จำพรรษา",
+      note: String($("other-note").value || "").trim(),
+      bio: bio,
+      rains: [],
+      affiliations: [],
+      courses: []
+    };
+    try {
+      if (otherEditing) await api("/monks/" + otherEditing, { method: "PUT", body: JSON.stringify(body) });
+      else await api("/monks", { method: "POST", body: JSON.stringify(body) });
+      clearOtherForm();
+      await loadOthers();
+    } catch (e) {
+      $("other-err").textContent = e.message || "บันทึกไม่สำเร็จ";
+    }
   }
   function showForm() {
     if (isDutiesOnlyUser(me)) return showDuties();
@@ -4045,8 +4429,8 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
       ? ["อาพาธ", $("illBedridden") && $("illBedridden").checked ? "ติดเตียง" : "", ($("illPlace") && $("illPlace").value) || ""]
         .filter(Boolean).join(" · ")
       : "";
-    const statusLabel = st === "ย้ายวัด" && dest
-      ? "ย้ายวัด · " + dest
+    const statusLabel = isOutOfVassaStatus(st)
+      ? (st === "ย้ายวัด" && dest ? "นอกพรรษา · ย้ายวัด · " + dest : "นอกพรรษา · " + st)
       : (illBits && st === "จำพรรษา" ? "จำพรรษา · " + illBits : st);
     const tags = [idVal("personType"), idVal("nikaya"), idVal("rankKindField"), idVal("title"), statusLabel]
       .filter(Boolean);
@@ -4244,6 +4628,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     if (bare === "วิปัสนาจารย์" || bare === "วิปัสสนาจารย์") return "วิปัสสนาจารย์";
     if (bare === "ปริยัตินิเทศก์" || bare === "ปริยัตินิเทศน์") return "ปริยัตินิเทศน์";
     if (bare === "บัณฑิตเผยแผ่") return "บัณฑิตเผยแผ่";
+    if (bare === "ทรงปาติโมกข์" || bare === "ปาติโมกข์" || bare === "สวดปาติโมกข์") return "ทรงปาติโมกข์";
     if (bare === "ธรรมทูต" || bare === "นักเทศน์") return bare;
     return k;
   }
@@ -4590,13 +4975,17 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   function isVisitRain(kind) {
     return kind === "มาจำพรรษาเพื่อเรียน" || kind === "มาอยู่เพื่อเรียน" || kind === "มาเรียน";
   }
+  function isOutOfVassaStatus(st) {
+    return st === "ลาสิกขา" || st === "ย้ายวัด";
+  }
   function listStatusText(m) {
-    if (isPendingRain(m.rainKindYear)) return "ยังไม่มา";
     const raw = m.status || "จำพรรษา";
     const st = raw === "อาพาธ" ? "จำพรรษา" : raw;
     const ill = !!(m.ill || raw === "อาพาธ" || (m.bio && m.bio.ill));
     const dest = m.movedToWat || (m.bio && m.bio.movedToWat) || "";
-    if (st === "ย้ายวัด") return dest ? "ย้ายวัด · " + dest : "ย้ายวัด";
+    if (st === "ย้ายวัด") return "นอกพรรษา · " + (dest ? "ย้ายวัด · " + dest : "ย้ายวัด");
+    if (st === "ลาสิกขา") return "นอกพรรษา · ลาสิกขา";
+    if (isPendingRain(m.rainKindYear)) return "ยังไม่มา";
     if (ill && st === "จำพรรษา") {
       const bits = ["จำพรรษา", "อาพาธ"];
       if (m.illBedridden || (m.bio && m.bio.illBedridden)) bits.push("ติดเตียง");
@@ -5866,7 +6255,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   const WAT_POS_GROUPS = [
     {
       name: "ปกครองวัด",
-      items: ["ผู้ช่วยเจ้าอาวาส", "รองเจ้าอาวาส", "เจ้าอาวาส"]
+      items: ["ผู้ช่วยเจ้าอาวาส", "รองเจ้าอาวาส", "เจ้าอาวาส", "อุปัชฌาย์"]
     },
     {
       name: "งานในวัด",
@@ -6800,6 +7189,18 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
             return n ? s + " " + n : "";
           }).filter(Boolean);
           if (pendingN) bits.splice(1, 0, "ยังไม่มา " + pendingN);
+          let inMonk = 0, inNov = 0, outMonk = 0, outNov = 0;
+          shown.forEach(function (m) {
+            const st = m.status || "จำพรรษา";
+            const nov = m.personType === "สามเณร";
+            if (isOutOfVassaStatus(st)) {
+              if (nov) outNov++; else outMonk++;
+            } else if ((st === "จำพรรษา" || st === "อาพาธ") && !isPendingRain(m.rainKindYear)) {
+              if (nov) inNov++; else inMonk++;
+            }
+          });
+          bits.push("ในพรรษา พระ " + inMonk + " เณร " + inNov);
+          bits.push("นอกพรรษา พระ " + outMonk + " เณร " + outNov);
           return bits.length ? " · " + bits.join(" · ") : "";
         }()) +
         (reportMeta.rankCounts ? " · ราชาคณะ " + (reportMeta.rankCounts["พระราชาคณะ"] || 0) +
@@ -6811,6 +7212,7 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
           " · วิปัสสนาจารย์ " + (reportMeta.rankCounts["วิปัสสนาจารย์"] || 0) +
           " · ปริยัตินิเทศน์ " + (reportMeta.rankCounts["ปริยัตินิเทศน์"] || 0) +
           " · บัณฑิตเผยแผ่ " + (reportMeta.rankCounts["บัณฑิตเผยแผ่"] || 0) +
+          " · อุปัชฌาย์ " + (reportMeta.rankCounts["พระอุปัชฌาย์"] || 0) +
           " · เปรียญธรรม " + (reportMeta.rankCounts["พระเปรียญธรรม"] || 0) : "")
       : (lockBit ? lockBit.replace(/^ · /, "") : "");
     if (!shown.length) {
@@ -7495,6 +7897,12 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
   };
   $("btn-new").onclick = function () { fill(null); };
   $("nav-list").onclick = function () { showList(); };
+  if ($("nav-others")) $("nav-others").onclick = function () { showOthers(); };
+  if ($("btn-other-save")) $("btn-other-save").onclick = function () { saveOther(); };
+  if ($("btn-other-clear")) $("btn-other-clear").onclick = function () { clearOtherForm(); };
+  if ($("other-type")) $("other-type").onchange = function () { syncOtherStay(); };
+  if ($("other-q")) $("other-q").oninput = function () { drawOthers(); };
+  if ($("other-filter")) $("other-filter").onchange = function () { drawOthers(); };
   $("nav-duties").onclick = function () { showDuties(); };
   if ($("nav-fund")) $("nav-fund").onclick = function () { showScholarships(); };
   if ($("btn-fund-save")) $("btn-fund-save").onclick = function () { saveScholarship(); };
