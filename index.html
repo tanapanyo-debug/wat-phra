@@ -335,6 +335,62 @@ input[data-f="positionCustom"] { margin-top: 6px; }
 }
 .view-stat b { display: block; font-size: 12px; color: #146e68; }
 .view-stat span { font-size: 1.15rem; font-weight: 700; color: #0f4f4b; }
+.edu-card {
+  background: #fff;
+  border: 1px solid var(--tone-bd, var(--line));
+  border-radius: 16px;
+  padding: 14px 14px 12px;
+  margin: 0 0 10px;
+}
+.edu-kicker { font-size: 12px; font-weight: 700; color: var(--tone, var(--muted)); margin-bottom: 2px; }
+.edu-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.edu-card-who { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.edu-card-who b { font-size: 1.05rem; line-height: 1.35; }
+.edu-chaya {
+  background: color-mix(in srgb, var(--tone, #5b3d8a) 16%, #fff);
+  color: var(--tone-ink, #3d2d78);
+  border-radius: 8px;
+  padding: 0 6px;
+  font-weight: 700;
+}
+.edu-card-grade { text-align: right; flex: none; }
+.edu-card-grade b {
+  display: block;
+  color: var(--tone, #4a2d78);
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+.edu-card-grade span { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.edu-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 8px; }
+.edu-pill {
+  min-width: 2.2em;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  background: #f3f0ea;
+  color: #b7b1a8;
+}
+.edu-pill.on { background: var(--tone, #5b2d86); color: #fff; }
+.edu-card-place {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  color: #5c6b84;
+  font-size: 13px;
+}
+.edu-certs { display: grid; gap: 0; margin-top: 8px; }
+.edu-cert {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  font-size: 13px;
+  padding: 6px 0;
+  border-top: 1px dashed var(--tone-bd, var(--line));
+}
+.edu-cert b { color: var(--tone-ink, var(--ink)); }
 .view-chip { display: block; padding: 5px 0; }
 .view-chip + .view-chip { border-top: 1px dashed #d7cbb8; }
 .view-chip.away {
@@ -499,7 +555,10 @@ body.duties-only #level-request-box { display: none !important; }
   body.print-data .wrap { max-width: none; padding: 0; }
   body.print-data details { display: block !important; }
   body.print-data .view-row,
-  body.print-data .view-hero {
+  body.print-data .view-hero,
+  body.print-data .edu-card,
+  body.print-data .edu-pill.on,
+  body.print-data .edu-chaya {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -2254,6 +2313,14 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     { key: "phd", label: "ปริญญาเอก" },
     { key: "hon", label: "ปริญญากิตติมศักดิ์" }
   ];
+  const WORLD_PILL = {
+    pri: "ป.", m1: "ม.ต้น", m3: "ม.ปลาย", dip: "อนุ",
+    ba: "ตรี", ma: "โท", phd: "เอก", hon: "กิตติ"
+  };
+  const WORLD_BADGE = {
+    pri: "ประถม", m1: "ม.ต้น", m3: "ม.ปลาย", dip: "อนุปริญญา",
+    ba: "ป.ตรี", ma: "ป.โท", phd: "ป.เอก", hon: "กิตติ"
+  };
   const WORLD_GRADE_OPTS = {
     pri: ["ประถมศึกษาปีที่ 6"],
     m1: ["มัธยมศึกษาปีที่ 3"],
@@ -4536,34 +4603,154 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     drawLevelList("naktham-list", "naktham-add", NAKTHAM_LEVELS, nakthamShown, "naktham");
     drawLevelList("pali-list", "pali-add", PALI_LEVELS, paliShown, "pali");
   }
+  function nakthamRank(text) {
+    const t = String(text || "");
+    if (t.indexOf("เอก") >= 0) return 2;
+    if (t.indexOf("โท") >= 0) return 1;
+    if (t.indexOf("ตรี") >= 0) return 0;
+    return -1;
+  }
+  function paliRank(text) {
+    const t = String(text || "");
+    const digits = [["9", "๙", 7], ["8", "๘", 6], ["7", "๗", 5], ["6", "๖", 4], ["5", "๕", 3], ["4", "๔", 2], ["3", "๓", 1]];
+    for (let i = 0; i < digits.length; i++) {
+      if (t.indexOf(digits[i][0]) >= 0 || t.indexOf(digits[i][1]) >= 0) return digits[i][2];
+    }
+    if (/[1๑2๒]/.test(t)) return 0;
+    return -1;
+  }
+  function nakthamPill(lv) {
+    if (lv.key === "dhammaTo") return "โท";
+    if (lv.key === "dhammaEk") return "เอก";
+    return "ตรี";
+  }
+  function paliPill(lv) {
+    return lv.key === "pali12" ? "1-2" : lv.key.replace("pali", "");
+  }
+  function schoolBit(s) {
+    s = String(s || "").trim();
+    if (!s) return "";
+    if (/^สำนัก/.test(s)) return s;
+    return "สำนักเรียน " + s;
+  }
+  function eduWhoHtml() {
+    const name = idVal("sanghaName") || [idVal("formerName"), idVal("formerSurname")].filter(Boolean).join(" ");
+    const chaya = idVal("chayaPali");
+    if (!name && !chaya) return "";
+    return '<div class="edu-card-who">' +
+      (name ? "<b>" + esc(name) + "</b>" : "") +
+      (chaya ? '<span class="edu-chaya">' + esc(chaya) + "</span>" : "") +
+      "</div>";
+  }
+  function eduPlaceHtml(parts) {
+    const bits = (parts || []).map(function (s) { return String(s || "").trim(); }).filter(Boolean);
+    if (!bits.length) return "";
+    return '<div class="edu-card-place">' + bits.map(function (s) { return "<span>" + esc(s) + "</span>"; }).join("") + "</div>";
+  }
+  function eduCardHtml(kicker, badge, year, pills, placeHtml, certsHtml) {
+    const anyPill = (pills || []).some(function (p) { return p.on; });
+    if (!anyPill && !certsHtml && !placeHtml && !badge) return "";
+    const grade = badge
+      ? '<div class="edu-card-grade"><b>' + esc(badge) + "</b>" +
+        (year ? "<span>" + esc(yearFront(year)) + "</span>" : "") + "</div>"
+      : "";
+    const pillHtml = anyPill
+      ? '<div class="edu-pills">' + pills.map(function (p) {
+        return '<span class="edu-pill' + (p.on ? " on" : "") + '">' + esc(p.label) + "</span>";
+      }).join("") + "</div>"
+      : "";
+    return '<article class="edu-card">' +
+      '<div class="edu-card-top"><div>' +
+      (kicker ? '<div class="edu-kicker">' + esc(kicker) + "</div>" : "") +
+      eduWhoHtml() +
+      "</div>" + grade + "</div>" +
+      pillHtml + (placeHtml || "") + (certsHtml || "") +
+      "</article>";
+  }
+  function trackSteps(bio, levels, kind) {
+    const explicit = levels.some(function (lv) { return levelHasData(bio, lv.key); });
+    let inferredTo = -1;
+    if (!explicit) inferredTo = kind === "naktham" ? nakthamRank(bio.dhammaLevel) : paliRank(bio.paliLevel);
+    return levels.map(function (lv, i) {
+      const on = explicit ? levelHasData(bio, lv.key) : i <= inferredTo;
+      let year = "";
+      let wat = "";
+      let school = "";
+      let province = "";
+      if (explicit && on) {
+        year = bio[lv.key + "Year"] || "";
+        province = bio[lv.key + "Province"] || "";
+        if (kind === "naktham") {
+          wat = bio[lv.key + "School"] || "";
+          school = bio[lv.key + "Samnak"] || "";
+        } else {
+          wat = bio[lv.key + "Wat"] || "";
+          school = bio[lv.key + "School"] || "";
+        }
+      } else if (!explicit && i === inferredTo) {
+        if (kind === "naktham") {
+          year = bio.dhammaYear || "";
+          wat = bio.dhammaSchool || "";
+        } else {
+          year = bio.paliYear || "";
+          school = bio.paliSchool || "";
+        }
+      }
+      return { lv: lv, on: on, year: year, wat: wat, school: school, province: province };
+    });
+  }
+  function stepBadge(kind, lv) {
+    if (kind === "naktham") return "น.ธ." + nakthamPill(lv);
+    return lv.key === "pali12" ? "ป.ธ.1-2" : "ป.ธ." + lv.key.replace("pali", "");
+  }
+  function trackCertsHtml(kind, steps) {
+    const on = steps.filter(function (s) { return s.on && (s.year || s.wat || s.school || s.province); });
+    if (on.length <= 1) return "";
+    const sig = function (s) { return [s.wat, s.school, s.province].join("|"); };
+    const samePlace = on.every(function (s) { return sig(s) === sig(on[0]); });
+    if (samePlace) return "";
+    return eduCertsHtml(on.map(function (s) {
+      const prov = s.province ? "จังหวัด" + s.province : "";
+      return {
+        label: stepBadge(kind, s.lv),
+        year: s.year,
+        school: [s.wat, schoolBit(s.school), prov].filter(Boolean).join(" · "),
+        detail: ""
+      };
+    }));
+  }
+  function gradeTrackCard(bio, kind) {
+    const levels = kind === "naktham" ? NAKTHAM_LEVELS : PALI_LEVELS;
+    const steps = trackSteps(bio, levels, kind);
+    if (!steps.some(function (s) { return s.on; })) return "";
+    const pills = steps.map(function (s) {
+      return { label: kind === "naktham" ? nakthamPill(s.lv) : paliPill(s.lv), on: s.on };
+    });
+    let top = steps[0];
+    steps.forEach(function (s) { if (s.on) top = s; });
+    let placeStep = top;
+    if (!placeStep.wat && !placeStep.school && !placeStep.province) {
+      for (let i = steps.length - 1; i >= 0; i--) {
+        if (steps[i].on && (steps[i].wat || steps[i].school || steps[i].province)) {
+          placeStep = steps[i];
+          break;
+        }
+      }
+    }
+    const certs = trackCertsHtml(kind, steps);
+    const prov = placeStep.province ? "จังหวัด" + placeStep.province : "";
+    return eduCardHtml(
+      kind === "naktham" ? "นักธรรม" : "บาลี",
+      stepBadge(kind, top.lv),
+      top.year,
+      pills,
+      certs ? "" : eduPlaceHtml([placeStep.wat, schoolBit(placeStep.school), prov]),
+      certs
+    );
+  }
   function drawGradeView() {
     const bio = collectBio();
-    const lines = [];
-    NAKTHAM_LEVELS.forEach(function (lv) {
-      const bits = [
-        bio[lv.key + "Year"],
-        bio[lv.key + "School"] ? "วัด" + bio[lv.key + "School"] : "",
-        bio[lv.key + "Samnak"] ? "สำนักเรียน " + bio[lv.key + "Samnak"] : "",
-        bio[lv.key + "Province"] ? "จังหวัด" + bio[lv.key + "Province"] : ""
-      ].filter(Boolean);
-      if (bits.length) lines.push(lv.label + " · " + bits.join(" · "));
-    });
-    PALI_LEVELS.forEach(function (lv) {
-      const bits = [
-        bio[lv.key + "Year"],
-        bio[lv.key + "Wat"] ? "สอบในนามวัด" + bio[lv.key + "Wat"] : "",
-        bio[lv.key + "School"] ? "สำนักเรียน " + bio[lv.key + "School"] : "",
-        bio[lv.key + "Province"] ? "จังหวัด" + bio[lv.key + "Province"] : ""
-      ].filter(Boolean);
-      if (bits.length) lines.push(lv.label + " · " + bits.join(" · "));
-    });
-    if (!lines.length) {
-      const d = [bio.dhammaLevel ? "นักธรรม " + bio.dhammaLevel : "", bio.dhammaYear, bio.dhammaSchool].filter(Boolean).join(" · ");
-      if (d) lines.push(d);
-      const p = [bio.paliLevel, bio.paliYear, bio.paliSchool].filter(Boolean).join(" · ");
-      if (p) lines.push("บาลี · " + p);
-    }
-    $("grade-view").innerHTML = viewOrHint(viewLinesHtml(lines));
+    $("grade-view").innerHTML = viewOrHint(gradeTrackCard(bio, "naktham") + gradeTrackCard(bio, "pali"));
   }
   function syncGradeSummary() {
     const bio = collectBio();
@@ -4864,34 +5051,122 @@ body.places-on .nav a.ghost { color: #fff; border-color: rgba(255,255,255,.35); 
     });
     wireWorldGradePicks();
   }
-  function extraLine(a) {
-    return eduLine(a.yearText, [a.kind, a.title, a.cohort, a.school, a.major]);
+  function worldKeyFromLabel(s) {
+    const t = String(s || "");
+    if (!t) return "";
+    if (/กิตติ/.test(t)) return "hon";
+    if (/เอก/.test(t)) return "phd";
+    if (/โท/.test(t)) return "ma";
+    if (/ตรี/.test(t)) return "ba";
+    if (/อนุ/.test(t)) return "dip";
+    if ((/ปวช|มัธยมปลาย|ม\.ปลาย/.test(t)) || (/ปีที่\s*6/.test(t) && /มัธยม|ม\.|ปวช/.test(t))) return "m3";
+    if (/มัธยมต้น|ม\.ต้น|ปีที่\s*3/.test(t)) return "m1";
+    if (/ประถม|ป\.6/.test(t)) return "pri";
+    return "";
   }
-  function eduLine(year, parts) {
-    const body = (parts || []).filter(Boolean).join(" · ");
-    const y = yearFront(year);
-    if (!y && !body) return "";
-    if (y) return y + " · " + body;
-    return body;
+  function worldLevelIndex(key) {
+    for (let i = 0; i < WORLD_LEVELS.length; i++) {
+      if (WORLD_LEVELS[i].key === key) return i;
+    }
+    return -1;
+  }
+  function cohortBit(c) {
+    c = String(c || "").trim();
+    if (!c) return "";
+    if (/รุ่น/.test(c)) return c;
+    return "รุ่น " + c;
+  }
+  function secularRows(bio) {
+    const rows = [];
+    WORLD_LEVELS.forEach(function (lv) {
+      if (!worldHasData(bio, lv.key)) return;
+      const grade = String(bio[lv.key + "Grade"] || "").trim();
+      rows.push({
+        key: lv.key,
+        label: lv.label,
+        badge: WORLD_BADGE[lv.key],
+        year: bio[lv.key + "Year"] || "",
+        school: bio[lv.key + "School"] || "",
+        detail: grade && grade !== lv.label ? grade : ""
+      });
+    });
+    if (eduTopHasData(bio)) {
+      const key = worldKeyFromLabel(bio.secularLevel);
+      const top = {
+        key: key,
+        label: bio.secularLevel || "วุฒิสูงสุด",
+        badge: key ? WORLD_BADGE[key] : (bio.secularLevel || "วุฒิ"),
+        year: bio.secularYear || "",
+        school: bio.secularSchool || "",
+        detail: bio.secularMajor || ""
+      };
+      const same = rows.some(function (r) {
+        return r.key && r.key === top.key &&
+          (!top.year || r.year === top.year) &&
+          (!top.school || !r.school || r.school === top.school);
+      });
+      if (same && bio.secularMajor) {
+        rows.forEach(function (r) {
+          if (r.key === top.key && (!top.year || r.year === top.year) && r.detail.indexOf(bio.secularMajor) < 0) {
+            r.detail = [r.detail, bio.secularMajor].filter(Boolean).join(" · ");
+          }
+        });
+      } else if (!same) rows.push(top);
+    }
+    collectEduExtra().forEach(function (a) {
+      if (!(a.yearText || a.title || a.school || a.major || a.note || a.cohort)) return;
+      const key = worldKeyFromLabel(a.kind) || worldKeyFromLabel(a.title);
+      const label = a.title || a.kind || "วุฒิเพิ่ม";
+      rows.push({
+        key: key,
+        label: a.kind && a.title && a.title.indexOf(a.kind) < 0 ? a.kind + " · " + a.title : label,
+        badge: key ? WORLD_BADGE[key] : (a.kind || label),
+        year: a.yearText || "",
+        school: a.school || "",
+        detail: [a.major, cohortBit(a.cohort), a.note].filter(Boolean).join(" · ")
+      });
+    });
+    return rows;
+  }
+  function highestSecular(rows) {
+    let best = rows[0];
+    let bestI = worldLevelIndex(best && best.key);
+    rows.forEach(function (r) {
+      const i = worldLevelIndex(r.key);
+      if (i >= bestI) {
+        bestI = i;
+        best = r;
+      }
+    });
+    return best;
+  }
+  function eduCertsHtml(rows) {
+    return '<div class="edu-certs">' + rows.map(function (r) {
+      const bits = [yearFront(r.year), r.school, r.detail].filter(Boolean);
+      return '<div class="edu-cert"><b>' + esc(r.label) + "</b>" +
+        (bits.length ? "<span>" + esc(bits.join(" · ")) + "</span>" : "") +
+        "</div>";
+    }).join("") + "</div>";
   }
   function drawEduView() {
     const bio = collectBio();
-    const lines = [];
-    if (bio.secularYear || bio.secularLevel || bio.secularSchool || bio.secularMajor) {
-      const top = eduLine(bio.secularYear, [bio.secularLevel, bio.secularSchool, bio.secularMajor]);
-      if (top) lines.push(top);
+    const rows = secularRows(bio);
+    if (!rows.length) {
+      $("edu-view").innerHTML = viewOrHint("");
+      return;
     }
-    WORLD_LEVELS.forEach(function (lv) {
-      const y = bio[lv.key + "Year"];
-      const g = bio[lv.key + "Grade"];
-      const s = bio[lv.key + "School"];
-      if (y || g || s) lines.push(eduLine(y, [lv.label, g, s]));
+    const pills = WORLD_LEVELS.map(function (lv) {
+      return { label: WORLD_PILL[lv.key], on: rows.some(function (r) { return r.key === lv.key; }) };
     });
-    collectEduExtra().forEach(function (a) {
-      const t = extraLine(a);
-      if (t) lines.push(t);
-    });
-    $("edu-view").innerHTML = viewOrHint(viewLinesHtml(lines));
+    const top = highestSecular(rows);
+    let place = "";
+    let certs = "";
+    if (rows.length === 1) {
+      place = eduPlaceHtml([rows[0].school, rows[0].detail]);
+    } else {
+      certs = eduCertsHtml(rows);
+    }
+    $("edu-view").innerHTML = eduCardHtml("", top.badge || top.label, top.year, pills, place, certs);
   }
   function setEduMode(on) {
     eduEditing = !!on;
